@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6C8991CB2EC0659300F05F29 /* WidgetSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8991CA2EC0659300F05F29 /* WidgetSettings.swift */; };
 		A1000001000000000000001 /* PlexWidgetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000000000000001 /* PlexWidgetApp.swift */; };
 		A1000003000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004000000000000001 /* ContentView.swift */; };
 		A1000005000000000000001 /* PlexAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006000000000000001 /* PlexAPI.swift */; };
@@ -14,10 +15,14 @@
 		A1000009000000000000001 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000000000000001 /* NowPlayingView.swift */; };
 		A1000011000000000000001 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000000000000001 /* Config.swift */; };
 		A1000013000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000014000000000000001 /* Assets.xcassets */; };
+		A1000032000000000000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033000000000000001 /* OnboardingView.swift */; };
+		A1000034000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035000000000000001 /* SettingsView.swift */; };
+		A1000036000000000000001 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037000000000000001 /* LaunchAtLogin.swift */; };
+		A1000038000000000000001 /* PlexAppMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039000000000000001 /* PlexAppMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000015000000000000001 /* PlexWidget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlexWidget.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C8991CA2EC0659300F05F29 /* WidgetSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSettings.swift; sourceTree = "<group>"; };
 		A1000002000000000000001 /* PlexWidgetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexWidgetApp.swift; sourceTree = "<group>"; };
 		A1000004000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000006000000000000001 /* PlexAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexAPI.swift; sourceTree = "<group>"; };
@@ -25,8 +30,13 @@
 		A1000010000000000000001 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		A1000012000000000000001 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		A1000014000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000015000000000000001 /* PlexWidget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlexWidget.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000016000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000017000000000000001 /* PlexWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PlexWidget.entitlements; sourceTree = "<group>"; };
+		A1000033000000000000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A1000035000000000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000037000000000000001 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		A1000039000000000000001 /* PlexAppMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexAppMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,11 +61,16 @@
 		A1000020000000000000001 /* PlexWidget */ = {
 			isa = PBXGroup;
 			children = (
+				6C8991CA2EC0659300F05F29 /* WidgetSettings.swift */,
 				A1000002000000000000001 /* PlexWidgetApp.swift */,
 				A1000004000000000000001 /* ContentView.swift */,
 				A1000010000000000000001 /* NowPlayingView.swift */,
+				A1000033000000000000001 /* OnboardingView.swift */,
+				A1000035000000000000001 /* SettingsView.swift */,
 				A1000006000000000000001 /* PlexAPI.swift */,
 				A1000008000000000000001 /* MediaRemoteController.swift */,
+				A1000037000000000000001 /* LaunchAtLogin.swift */,
+				A1000039000000000000001 /* PlexAppMonitor.swift */,
 				A1000012000000000000001 /* Config.swift */,
 				A1000014000000000000001 /* Assets.xcassets */,
 				A1000016000000000000001 /* Info.plist */,
@@ -142,11 +157,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000001000000000000001 /* PlexWidgetApp.swift in Sources */,
+				6C8991CB2EC0659300F05F29 /* WidgetSettings.swift in Sources */,
 				A1000003000000000000001 /* ContentView.swift in Sources */,
 				A1000005000000000000001 /* PlexAPI.swift in Sources */,
 				A1000007000000000000001 /* MediaRemoteController.swift in Sources */,
 				A1000009000000000000001 /* NowPlayingView.swift in Sources */,
 				A1000011000000000000001 /* Config.swift in Sources */,
+				A1000032000000000000001 /* OnboardingView.swift in Sources */,
+				A1000034000000000000001 /* SettingsView.swift in Sources */,
+				A1000036000000000000001 /* LaunchAtLogin.swift in Sources */,
+				A1000038000000000000001 /* PlexAppMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
