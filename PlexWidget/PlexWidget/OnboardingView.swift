@@ -218,8 +218,6 @@ struct OnboardingView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .padding(.vertical, 12)
-                    .fixedSize(horizontal: false, vertical: true)
                     .background(
                         Group {
                             if isFormValid {

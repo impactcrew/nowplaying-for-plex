@@ -90,6 +90,23 @@ struct SettingsView: View {
                 .padding(12)
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(10)
+
+                // Quit Button
+                Button(action: {
+                    NSApplication.shared.terminate(nil)
+                }) {
+                    HStack {
+                        Spacer()
+                        Text("Quit PlexWidget")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(24)
             .background(

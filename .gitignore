@@ -23,9 +23,3 @@ DerivedData/
 
 # Temporary files
 *.log
-
-# Temporary HTML mockups (for design iteration)
-*-mockup.html
-layout-mockup.html
-control-center-mockup.html
-music-widget-mockup.html
