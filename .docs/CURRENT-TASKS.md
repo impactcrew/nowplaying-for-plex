@@ -4,85 +4,55 @@
 
 ## Active Tasks
 
-### CRITICAL: App Crashes on Launch After Onboarding
-**Status:** BLOCKED - Requires Mac restart to clear caches
-**Priority:** CRITICAL
-
-**The Problem:**
-After completing onboarding, the app crashes with segmentation fault (SIGSEGV) instead of showing menu bar icon and player window.
-
-**Root Cause Identified:**
-- App was crashing trying to run from `/Applications/PlexWidget.app` (old broken version)
-- macOS Launch Services cached the broken app location even after deletion
-- Memory corruption (EXC_BAD_ACCESS at 0x20) in objc_release during app startup
-- Clean rebuild from commit a6e0775 (known working version) is ready to test
-
-**What Was Tried:**
-1. Reverted code to exact working version from commit a6e0775
-2. Removed all PlexWidget.app copies from /Applications
-3. Cleared UserDefaults and Keychain
-4. Reset Launch Services database with lsregister -kill
-5. Multiple clean rebuilds
+### Production Release Preparation
+**Status:** Ready for DMG Creation
+**Priority:** HIGH
 
 **Current State:**
-- Code is reverted to EXACT working version (commit a6e0775)
-- Clean Release build exists at: `/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app`
-- User is restarting Mac to clear all caches
-- DMG with large icons (128x128) was successfully created earlier
+App is fully functional and crash-free after fixing the lazy initialization issue.
 
-**IMMEDIATE Next Steps (After Restart):**
-1. Run: `open "/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app"`
-2. Complete onboarding with Plex credentials
-3. Verify menu bar icon and player appear (should work - code is identical to working version)
-4. If working, create fresh DMG and test installation
-5. Launch ready for distribution
-
-**Important Notes:**
-- DO NOT modify PlexWidgetApp.swift - it's the exact working version
-- The crash was environmental (cached broken app), NOT a code issue
-- Restart should resolve all caching/memory issues
+**Next Steps:**
+1. Create production DMG with working build
+2. Test DMG installation on clean system
+3. Create GitHub release
+4. Publish to App Store (future)
 
 ---
 
 ## Completed Tasks
 
-### DMG Creation with Large Icons
-**Status:** ✅ Completed
+### Fixed App Crash on Launch
+**Status:** ✅ RESOLVED
 **Date Completed:** 2025-11-10
+**Commit:** 2b86e73
 
-Successfully created production DMG with properly sized icons (128x128) using AppleScript configuration:
-- Icons display at large size similar to professional installers
-- Drag-to-Applications symlink works correctly
-- Icon positioning adjusted to user preference (moved up slightly)
-- DMG compressed to 2.4MB final size
+**The Problem:**
+App crashed with SIGSEGV (EXC_BAD_ACCESS at 0x20) during startup when accessing WidgetSettings.
 
-### Code Reverted to Working Version
-**Status:** ✅ Completed
-**Date Completed:** 2025-11-10
-
-Reverted all code to commit a6e0775 (last known working version):
-- PlexWidgetApp.swift - Menu bar item created in applicationDidFinishLaunching
-- OnboardingView.swift - Original working onboarding flow
-- SettingsView.swift - Settings panel with Quit button
-
-**Critical Code Pattern (From Working Version a6e0775):**
+**Root Cause:**
+The crash occurred because `WidgetSettings.shared` was being eagerly initialized in AppDelegate:
 ```swift
-// Menu bar item created IMMEDIATELY in applicationDidFinishLaunching
-// NOT after onboarding - this is key to making it work
-func applicationDidFinishLaunching(_ notification: Notification) {
-    if ConfigManager.shared.loadConfig() == nil {
-        NSApp.setActivationPolicy(.regular)
-        showOnboarding()
-    } else {
-        NSApp.setActivationPolicy(.accessory)
-        showMainWidget()
-    }
-
-    // Menu bar created HERE regardless of onboarding state
-    statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    // ... icon setup code ...
-}
+class AppDelegate: NSObject, NSApplicationDelegate {
+    var settings = WidgetSettings.shared  // ❌ Accessed @AppStorage too early
 ```
+
+Since `WidgetSettings` uses `@AppStorage` property wrappers that access UserDefaults, this was happening before the app lifecycle was fully initialized, causing memory corruption.
+
+**The Fix:**
+Changed to lazy initialization in PlexWidgetApp.swift:30:
+```swift
+class AppDelegate: NSObject, NSApplicationDelegate {
+    lazy var settings = WidgetSettings.shared  // ✅ Delays initialization
+```
+
+This ensures `WidgetSettings` and its `@AppStorage` properties are only created when first accessed, after the app has fully initialized.
+
+**Verified:**
+- App launches successfully without crashes
+- Onboarding flow works correctly
+- Menu bar icon appears
+- Settings panel accessible
+- All features functional
 
 ---
 
