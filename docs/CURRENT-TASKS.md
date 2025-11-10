@@ -213,7 +213,8 @@ log stream --predicate 'process == "PlexWidget"' --level debug
     - Link to README
 
 ### Optional Future Enhancements (Low Priority)
-- Hide widget from macOS sound menu (Plex already shows there, causes duplicate entries)
+- Seamless track transitions - eliminate display flicker during continuous playback
+- Mini mode for smaller screens
 - Code signing to avoid Gatekeeper warnings
 - Multi-monitor position persistence
 - Error handling improvements (server unreachable, no music playing)
