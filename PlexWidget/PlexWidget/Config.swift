@@ -36,7 +36,10 @@ class ConfigManager {
     // MARK: - Keychain Operations
 
     private func saveTokenToKeychain(_ token: String) -> Bool {
-        guard let tokenData = token.data(using: .utf8) else { return false }
+        guard let tokenData = token.data(using: .utf8) else {
+            print("DEBUG: Failed to convert token to data")
+            return false
+        }
 
         // Delete any existing token first
         deleteTokenFromKeychain()
@@ -52,6 +55,10 @@ class ConfigManager {
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
+        print("DEBUG: Keychain save status: \(status) (errSecSuccess = \(errSecSuccess))")
+        if status != errSecSuccess {
+            print("DEBUG: Keychain error: \(SecCopyErrorMessageString(status, nil) as String? ?? "Unknown error")")
+        }
         return status == errSecSuccess
     }
 

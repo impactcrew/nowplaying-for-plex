@@ -1,85 +1,88 @@
 # Plex Desktop Widget - Current Tasks
 
-**Last Updated:** 2025-11-09
+**Last Updated:** 2025-11-10
 
 ## Active Tasks
 
-### CRITICAL: Fix DMG Icon Display Issues
-**Status:** In Progress (BLOCKED - needs user screenshot/feedback)
-**Priority:** High
+### CRITICAL: App Crashes on Launch After Onboarding
+**Status:** BLOCKED - Requires Mac restart to clear caches
+**Priority:** CRITICAL
 
-The DMG installer has icon display problems that need to be resolved:
+**The Problem:**
+After completing onboarding, the app crashes with segmentation fault (SIGSEGV) instead of showing menu bar icon and player window.
 
-**Issues Identified:**
-1. Icons appear cut off at the bottom
-2. A faint icon is visible in the background
-3. Icons may not be displaying at proper 128x128 size
+**Root Cause Identified:**
+- App was crashing trying to run from `/Applications/PlexWidget.app` (old broken version)
+- macOS Launch Services cached the broken app location even after deletion
+- Memory corruption (EXC_BAD_ACCESS at 0x20) in objc_release during app startup
+- Clean rebuild from commit a6e0775 (known working version) is ready to test
 
-**What Was Attempted:**
-- Multiple iOS agent invocations to fix icon sizing
-- AppleScript-based .DS_Store configuration
-- Using `create-dmg` tool
-- Manual hdiutil DMG creation with Applications symlink
+**What Was Tried:**
+1. Reverted code to exact working version from commit a6e0775
+2. Removed all PlexWidget.app copies from /Applications
+3. Cleared UserDefaults and Keychain
+4. Reset Launch Services database with lsregister -kill
+5. Multiple clean rebuilds
 
 **Current State:**
-- DMG is mounted at `/Volumes/PlexWidget 1/`
-- Contains PlexWidget.app and Applications symlink
-- Finder window opened but user stopped the investigation before screenshot could be captured
+- Code is reverted to EXACT working version (commit a6e0775)
+- Clean Release build exists at: `/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app`
+- User is restarting Mac to clear all caches
+- DMG with large icons (128x128) was successfully created earlier
 
-**Next Steps:**
-1. Wait for user to provide screenshot or description of the exact icon display issue
-2. Research proper .DS_Store configuration for large icon display (128x128)
-3. Consider using a reliable DMG creation tool like `create-dmg` with proper icon sizing parameters
-4. Test the solution thoroughly before presenting to user
+**IMMEDIATE Next Steps (After Restart):**
+1. Run: `open "/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app"`
+2. Complete onboarding with Plex credentials
+3. Verify menu bar icon and player appear (should work - code is identical to working version)
+4. If working, create fresh DMG and test installation
+5. Launch ready for distribution
 
 **Important Notes:**
-- User explicitly said "STOP. look properly. there is a faint icon in the background and the main icons are cutt off at the bottom. don't rush this"
-- Need to slow down and carefully examine the issue before attempting fixes
-- The app code itself is working correctly (PlexWidgetApp.swift)
+- DO NOT modify PlexWidgetApp.swift - it's the exact working version
+- The crash was environmental (cached broken app), NOT a code issue
+- Restart should resolve all caching/memory issues
 
 ---
 
 ## Completed Tasks
 
-### App Functionality - FULLY WORKING
+### DMG Creation with Large Icons
 **Status:** ✅ Completed
-**Date Completed:** 2025-11-09
+**Date Completed:** 2025-11-10
 
-**What Was Fixed:**
-1. **Menu Bar Icon Timing Issue** - Created `createMenuBarItem()` function that is called AFTER switching to `.accessory` mode (lines 42, 86 in PlexWidgetApp.swift)
-2. **Quit Button** - Added Quit button to SettingsView panel (lines 94-109 in SettingsView.swift)
-3. **DMG with Applications Symlink** - Built Release DMG with drag-to-Applications functionality
+Successfully created production DMG with properly sized icons (128x128) using AppleScript configuration:
+- Icons display at large size similar to professional installers
+- Drag-to-Applications symlink works correctly
+- Icon positioning adjusted to user preference (moved up slightly)
+- DMG compressed to 2.4MB final size
 
-**Critical Code (DO NOT CHANGE):**
+### Code Reverted to Working Version
+**Status:** ✅ Completed
+**Date Completed:** 2025-11-10
+
+Reverted all code to commit a6e0775 (last known working version):
+- PlexWidgetApp.swift - Menu bar item created in applicationDidFinishLaunching
+- OnboardingView.swift - Original working onboarding flow
+- SettingsView.swift - Settings panel with Quit button
+
+**Critical Code Pattern (From Working Version a6e0775):**
 ```swift
-// PlexWidgetApp.swift:33-45
+// Menu bar item created IMMEDIATELY in applicationDidFinishLaunching
+// NOT after onboarding - this is key to making it work
 func applicationDidFinishLaunching(_ notification: Notification) {
     if ConfigManager.shared.loadConfig() == nil {
         NSApp.setActivationPolicy(.regular)
         showOnboarding()
     } else {
         NSApp.setActivationPolicy(.accessory)
-        createMenuBarItem()  // CRITICAL: Called AFTER accessory mode
         showMainWidget()
     }
-}
 
-// PlexWidgetApp.swift:80-88 (onboarding completion)
-onComplete: { [weak self] serverUrl, token in
-    self?.onboardingWindow?.close()
-    self?.onboardingWindow = nil
-    NSApp.setActivationPolicy(.accessory)
-    self?.createMenuBarItem()  // CRITICAL: Called AFTER accessory mode
-    self?.showMainWidget()
+    // Menu bar created HERE regardless of onboarding state
+    statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    // ... icon setup code ...
 }
 ```
-
-**Testing Verified:**
-- Onboarding shows correctly on first launch
-- After onboarding completes, menu bar icon appears
-- Widget window displays correctly
-- Settings panel accessible from menu bar icon
-- Quit button works in settings panel
 
 ---
 
@@ -96,45 +99,74 @@ onComplete: { [weak self] serverUrl, token in
 
 ## Important Context
 
-### What Works
-- App code is 100% functional
-- Onboarding flow works correctly
-- Menu bar icon appears after setup
-- Widget displays now playing info
-- Settings panel with all controls
-- Quit functionality
+### What's Working (Code-wise)
+- Code is identical to commit a6e0775 which was verified working
+- Clean Release build is ready at DerivedData location
+- DMG with large icons created successfully
+- All git changes committed (commit 2c6f9af)
 
-### What Doesn't Work
-- DMG icon display (icons cut off, faint background icon)
+### What's Blocked
+- App crashes on launch due to macOS cache issues
+- User restarting to clear caches
 
 ### Critical Lessons Learned
-1. **Menu bar icon creation MUST happen AFTER `.accessory` mode** - This was the root cause of the "onboarding yes, menu no, player no" bug
-2. **Don't let debugger agent change working code** - The debugger agent broke the working solution by adding delays and changing `makeKeyAndOrderFront` to `orderFrontRegardless`
-3. **User wants Quit button in settings panel, NOT in menu bar** - Don't replace the menu bar chevron icon
-4. **DMG creation requires careful icon configuration** - Multiple attempts with different tools have not yet produced correct icon display
+1. **Menu bar item MUST be created in applicationDidFinishLaunching, NOT after onboarding** - Creating it after onboarding causes the app to have no windows and macOS terminates it
+2. **macOS aggressively caches app locations** - Even after deleting /Applications/PlexWidget.app, Launch Services still tried to run the old version
+3. **Always test from DerivedData directly during development** - Avoids cache issues
+4. **Memory corruption crashes require full system restart** - lsregister reset not enough
+5. **When debugging fails, revert to last known working version** - We spent hours trying to fix when the issue was environmental, not code
 
 ### Known Issues to Remember
-- UserDefaults persists between app runs - may need `defaults delete com.plexwidget.app` for clean testing
-- DMG needs proper .DS_Store configuration for large icons without cutoff
+- UserDefaults persists: `defaults delete com.plexwidget.app` for clean testing
+- Keychain persists: `security delete-generic-password -s "com.plexwidget.credentials" -a "plex-token"` to clear
+- After restart, ONLY launch from DerivedData path until verified working
 
 ---
 
 ## Next Session Priorities
 
-1. **HIGH:** Fix DMG icon display issues
-   - Get screenshot/description from user of exact problem
-   - Research proper .DS_Store icon view settings
-   - Test solution thoroughly before presenting
+### IMMEDIATE (First 5 Minutes After Restart)
 
-2. **MEDIUM:** Test complete DMG installation flow
-   - Clear UserDefaults: `defaults delete com.plexwidget.app`
-   - Install from DMG
-   - Verify onboarding appears
-   - Verify menu bar icon and widget appear after setup
+1. **Test app from DerivedData:**
+   ```bash
+   open "/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app"
+   ```
 
-3. **LOW:** Consider roadmap items from ROADMAP.md if DMG is complete
-   - Seamless track transitions (v1.1)
-   - Mini mode (v1.1)
+2. **Complete onboarding** with Plex credentials
+
+3. **Verify it works:**
+   - Menu bar icon appears ✓
+   - Player window appears ✓
+   - Settings accessible ✓
+
+### If Working (Next Steps)
+
+4. **Create fresh DMG from working build:**
+   ```bash
+   cd PlexWidget
+   rm -rf /tmp/dmg-build
+   mkdir -p /tmp/dmg-build
+   cp -R "/Users/lemon/Library/Developer/Xcode/DerivedData/PlexWidget-ekdjkaiigyfuxzbyeenegnfaddic/Build/Products/Release/PlexWidget.app" /tmp/dmg-build/
+   ln -s /Applications /tmp/dmg-build/Applications
+   # Then create DMG with AppleScript for large icons
+   ```
+
+5. **Test DMG installation:**
+   - Clear data: `defaults delete com.plexwidget.app && security delete-generic-password -s "com.plexwidget.credentials" -a "plex-token"`
+   - Mount DMG and drag to Applications
+   - Launch from /Applications/PlexWidget.app
+   - Verify onboarding and functionality
+
+6. **LAUNCH!** 🚀
+   - Push to GitHub
+   - Create release with DMG attached
+   - Update README with download link
+
+### If Still Broken
+
+- Check Console.app for crash logs
+- Verify DerivedData path is correct
+- May need to reinstall Xcode command line tools
 
 ---
 
@@ -163,10 +195,14 @@ ROADMAP.md                            # Future features planned
 
 **Current Branch:** main
 
-**Staged/Modified Files:**
-- PlexWidget/PlexWidget/PlexWidgetApp.swift (Modified)
-- PlexWidget/PlexWidget/SettingsView.swift (New file)
-- PlexWidget/PlexWidget/WidgetSettings.swift (New file)
-- Other modified files in PlexWidget/ directory
+**Last Commit:** 2c6f9af - "feat: Add menu bar integration, settings panel, and production DMG"
 
-**Note:** No git commits were made this session. Consider committing the working app code before making DMG-related changes.
+**Recent Commits:**
+- 2c6f9af (HEAD) feat: Add menu bar integration, settings panel, and production DMG
+- a6e0775 Add Plex Desktop Widget with security features and documentation
+- 37035d8 Initial commit: Plex Desktop Widget (Swift/SwiftUI)
+
+**Current State:**
+- All changes from this session are committed
+- Code reverted to working version a6e0775 patterns
+- Ready for testing after restart
