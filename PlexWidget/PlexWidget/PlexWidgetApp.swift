@@ -27,7 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var onboardingWindow: NSWindow?
     var statusBarItem: NSStatusItem?
     var settingsWindow: NSWindow?
-    var settings = WidgetSettings.shared
+    lazy var settings = WidgetSettings.shared
     var clickOutsideMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -39,12 +39,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             // Show main widget - use accessory activation policy (menu bar only)
             NSApp.setActivationPolicy(.accessory)
-            createMenuBarItem()
             showMainWidget()
         }
-    }
 
-    func createMenuBarItem() {
         // Create menu bar item with Plex chevron icon
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusBarItem?.button {
@@ -83,7 +80,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.onboardingWindow = nil
                 // Switch to accessory mode (menu bar only) and show main widget
                 NSApp.setActivationPolicy(.accessory)
-                self?.createMenuBarItem()
                 self?.showMainWidget()
             },
             onClose: { [weak self] in
