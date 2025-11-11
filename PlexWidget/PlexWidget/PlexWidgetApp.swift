@@ -41,7 +41,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             // Show main widget - use accessory activation policy (menu bar only)
             NSApp.setActivationPolicy(.accessory)
-            showMainWidget()
+            Task { @MainActor in
+                showMainWidget()
+            }
         }
 
         // Create menu bar item with Plex chevron icon
@@ -79,23 +81,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onComplete: { [weak self] serverUrl, token in
                 guard let self = self else { return }
 
-                // Close onboarding window first to avoid window server conflicts
-                self.onboardingWindow?.close()
-                self.onboardingWindow = nil
+                // CRITICAL FIX: Defer window closure to next run loop cycle
+                // This ensures all autorelease pools from the button action have drained
+                // before we destroy the window and its view hierarchy
+                // Without this delay, we get EXC_BAD_ACCESS crashes in objc_autoreleasePoolPop
+                // because SwiftUI objects are double-freed
+                // WORKAROUND: Don't destroy the onboarding window - just hide it
+                // Destroying it causes SwiftUI double-free crashes
+                // Keep it alive but hidden to avoid memory management issues
+                DispatchQueue.main.async {
+                    // Hide window
+                    self.onboardingWindow?.orderOut(nil)
 
-                // Small delay to ensure window cleanup completes before activation policy change
-                // This prevents potential window server errors when transitioning
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // Change to accessory mode (menu bar only)
-                    NSApp.setActivationPolicy(.accessory)
+                    // Change to accessory mode and show main widget
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NSApp.setActivationPolicy(.accessory)
 
-                    // Show main widget directly instead of terminating
-                    self.showMainWidget()
+                        Task { @MainActor in
+                            self.showMainWidget()
+                        }
+                    }
                 }
             },
             onClose: { [weak self] in
                 guard let self = self else { return }
                 // User closed onboarding without completing setup
+                // Clear content view first to break SwiftUI reference cycle
+                self.onboardingWindow?.contentView = nil
                 self.onboardingWindow?.close()
                 self.onboardingWindow = nil
 
@@ -129,13 +141,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         onboardingWindow?.level = .floating
         onboardingWindow?.isMovableByWindowBackground = true
 
-        // CRITICAL FIX: Create NSHostingView in an autoreleasepool to prevent memory corruption
-        // during view initialization. This prevents EXC_BAD_ACCESS crashes in objc_autoreleasePoolPop.
-        // The issue occurs when NSHostingView's internal autorelease pool cleanup collides with
-        // SwiftUI's async task execution during onboarding validation.
-        let hostingView = autoreleasepool { () -> NSHostingView<OnboardingView> in
-            NSHostingView(rootView: onboardingView)
-        }
+        // Create hosting view without autoreleasepool wrapper
+        // The autoreleasepool was causing double-free crashes because SwiftUI objects
+        // were being released while still referenced by the active view hierarchy
+        let hostingView = NSHostingView(rootView: onboardingView)
         onboardingWindow?.contentView = hostingView
         onboardingWindow?.makeKeyAndOrderFront(nil)
 
@@ -143,6 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    @MainActor
     func showMainWidget() {
         // Create the floating window
         // Card width: 477px + 75px for album art sticking out left = 552px total + 40px padding

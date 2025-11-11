@@ -354,40 +354,40 @@ struct OnboardingView: View {
         let cleanUrl = serverUrl.trimmingCharacters(in: .whitespaces)
         let cleanToken = token.trimmingCharacters(in: .whitespaces)
 
-        // CRITICAL FIX: Wrap async task to stabilize autorelease pool behavior.
-        // This prevents memory corruption when async task's autorelease pool
-        // interferes with NSHostingView's lifecycle management.
-        autoreleasepool {
-            Task {
-                print("DEBUG Onboarding: Testing connection to \(cleanUrl)")
+        // CRITICAL FIX: Do NOT use autoreleasepool - it conflicts with Task execution
+        // The actual issue was calling onComplete() inside the MainActor block
+        // while still inside the autoreleasepool. This caused double-free crashes.
+        // Solution: Call async validation without autoreleasepool wrapping.
+        Task {
+            print("DEBUG Onboarding: Testing connection to \(cleanUrl)")
 
-                // Create test API instance and validate connection
-                // Network I/O happens on background thread
-                let testResult = await validatePlexConnection(serverUrl: cleanUrl, token: cleanToken)
+            // Create test API instance and validate connection
+            // Network I/O happens on background thread
+            let testResult = await validatePlexConnection(serverUrl: cleanUrl, token: cleanToken)
 
-                print("DEBUG Onboarding: Validation result - success: \(testResult.success), error: \(testResult.error ?? "nil")")
+            print("DEBUG Onboarding: Validation result - success: \(testResult.success), error: \(testResult.error ?? "nil")")
 
-                // Now switch to MainActor for UI updates only
-                await MainActor.run {
-                    if let error = testResult.error {
-                        // Connection failed - show error with animation
-                        print("DEBUG Onboarding: Connection failed with error: \(error)")
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            errorMessage = error
-                            isValidating = false
-                        }
+            // Now switch to MainActor for UI updates only
+            await MainActor.run {
+                if let error = testResult.error {
+                    // Connection failed - show error with animation
+                    print("DEBUG Onboarding: Connection failed with error: \(error)")
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        errorMessage = error
+                        isValidating = false
+                    }
+                } else {
+                    // Success! Save the config
+                    print("DEBUG Onboarding: Connection successful, saving config")
+                    if ConfigManager.shared.saveConfig(serverUrl: cleanUrl, token: cleanToken) {
+                        // Stop the spinner before transitioning
+                        isValidating = false
+                        // Call onComplete - the app delegate handles proper timing for window closure
+                        self.onComplete(cleanUrl, cleanToken)
                     } else {
-                        // Success! Save the config
-                        print("DEBUG Onboarding: Connection successful, saving config")
-                        if ConfigManager.shared.saveConfig(serverUrl: cleanUrl, token: cleanToken) {
-                            // Call onComplete BEFORE setting isValidating = false
-                            // This ensures proper cleanup order when the window closes
-                            onComplete(cleanUrl, cleanToken)
-                        } else {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                errorMessage = "Failed to save configuration"
-                                isValidating = false
-                            }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            errorMessage = "Failed to save configuration"
+                            isValidating = false
                         }
                     }
                 }

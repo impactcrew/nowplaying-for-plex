@@ -30,10 +30,7 @@ xcodebuild \
     -configuration "$CONFIGURATION" \
     -arch x86_64 \
     -derivedDataPath "$BUILD_DIR/DerivedData-x86_64" \
-    ONLY_ACTIVE_ARCH=NO \
-    CODE_SIGN_IDENTITY="" \
-    CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGNING_ALLOWED=NO
+    ONLY_ACTIVE_ARCH=NO
 
 # Build for Apple Silicon (arm64)
 echo ""
@@ -44,10 +41,7 @@ xcodebuild \
     -configuration "$CONFIGURATION" \
     -arch arm64 \
     -derivedDataPath "$BUILD_DIR/DerivedData-arm64" \
-    ONLY_ACTIVE_ARCH=NO \
-    CODE_SIGN_IDENTITY="" \
-    CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGNING_ALLOWED=NO
+    ONLY_ACTIVE_ARCH=NO
 
 # Create universal binary using lipo
 echo ""
@@ -70,6 +64,22 @@ lipo -create \
     "$ARM_APP/$EXECUTABLE_PATH" \
     -output "$UNIVERSAL_APP/$EXECUTABLE_PATH"
 
+# Code sign the app with ad-hoc identity
+# This is CRITICAL for network access when hardened runtime is enabled
+echo ""
+echo "Code signing universal binary..."
+codesign -s - --deep --force --entitlements "$PROJECT_DIR/PlexWidget/PlexWidget.entitlements" "$UNIVERSAL_APP" 2>&1 | grep -v "^Warning" || true
+
+# Verify the signature
+echo ""
+echo "Verifying code signature..."
+if codesign -v "$UNIVERSAL_APP" 2>&1; then
+    echo "Code signature verified successfully"
+else
+    echo "WARNING: Code signature verification failed"
+    exit 1
+fi
+
 echo ""
 echo "=========================================="
 echo "Build Complete!"
@@ -80,6 +90,9 @@ echo "  $UNIVERSAL_APP"
 echo ""
 echo "Architectures:"
 lipo -info "$UNIVERSAL_APP/$EXECUTABLE_PATH"
+echo ""
+echo "Code Signature:"
+codesign -d -v "$UNIVERSAL_APP" 2>&1 | head -3
 echo ""
 echo "To install:"
 echo "  cp -R '$UNIVERSAL_APP' /Applications/"
