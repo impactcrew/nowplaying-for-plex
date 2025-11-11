@@ -34,14 +34,15 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 
 ## Installation
 
-### Download Universal Binary (Recommended)
+### Download DMG Installer (Recommended)
 
-Download the pre-built universal binary from the [Releases](https://github.com/impactcrew/plex-desktop-widget/releases) page.
+Download the DMG installer from the [Releases](https://github.com/impactcrew/plex-desktop-widget/releases) page.
 
-1. Download the latest `PlexWidget.app.zip` from the Releases page
-2. Unzip the file and move `PlexWidget.app` to your `/Applications` folder
-3. Launch PlexWidget and complete the onboarding setup
-4. Grant Keychain access when prompted
+1. Download the latest `PlexWidget.dmg` from the Releases page
+2. Open the DMG file
+3. Drag `PlexWidget.app` to the `Applications` folder
+4. Launch PlexWidget and complete the onboarding setup
+5. Grant Keychain access when prompted
 
 **Note:** First launch may show a Gatekeeper warning. Right-click the app and select "Open" to bypass this.
 
@@ -211,6 +212,10 @@ PlexWidget cannot add play/pause/skip buttons due to fundamental limitations in 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+Artist and album names shown in screenshots are for demonstration purposes only and do not imply endorsement by the respective artists or labels.
 
 ## Acknowledgments
 
