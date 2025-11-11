@@ -161,10 +161,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### App Crashes During Onboarding
 
-- This is a known intermittent issue (see Known Issues section)
-- Simply relaunch the app - your credentials are saved
-- If crash persists, check crash logs: `~/Library/Logs/DiagnosticReports/PlexWidget*`
-- Please report crash logs in GitHub Issues to help us fix this
+- This issue has been fixed in v1.0.0
+- If you're using an older version, please update to the latest release
+- If crashes persist after updating, please report in GitHub Issues with crash logs from: `~/Library/Logs/DiagnosticReports/PlexWidget*`
 
 ## Privacy
 
@@ -177,10 +176,11 @@ This app:
 
 ## Recent Updates
 
-- **Code cleanup** - Removed non-functional playback control code (~200 lines)
+- **v1.0.0 Release** - Fixed critical onboarding crash, added local network support
 - **Improved threading** - Resolved @MainActor threading issues with network I/O
 - **Smooth track transitions** - Album art now persists during track changes (no flicker)
 - **Seamless onboarding** - Smooth window transition instead of app termination
+- **Universal Binary** - Native support for both Intel and Apple Silicon Macs
 - **Menu bar quit button** - Added quit option in settings panel
 - **Universal binary** - Built for both Intel and Apple Silicon Macs
 - **Hidden from sound menu** - No longer appears in macOS sound menu
