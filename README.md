@@ -11,11 +11,14 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 
 ![Plex Desktop Widget](Screenshot.png)
 
-<div align="center">
-  <img src="Onboarding.webp" width="30%" alt="Onboarding screen">
-  <img src="Settings.webp" width="30%" alt="Settings panel">
-  <img src="Player.webp" width="30%" alt="Widget player modes">
-</div>
+### Onboarding & Settings
+<img src="Onboarding.webp" alt="Onboarding screen">
+
+### Customization Options
+<img src="Player.webp" alt="Widget player modes">
+
+### Settings Panel
+<img src="Settings.webp" alt="Settings panel">
 
 ## Features
 
@@ -23,7 +26,6 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 - **Beautiful Album Art** - Displays high-quality album artwork with customizable shapes (square, rounded, circle)
 - **Smooth Track Transitions** - Album art persists during track changes for seamless playback experience
 - **Real-time Updates** - Automatically polls and updates as your playback changes (2-second interval)
-- **Native macOS Design** - Glassmorphic overlay with smooth animations
 - **Secure Authentication** - Token stored securely in macOS Keychain
 - **First-run Onboarding** - Easy setup with guided onboarding and connection validation
 - **Customizable Appearance** - Theme (Light/Dark), Layout (Side/Overlay), Glow colors
@@ -182,24 +184,11 @@ This app:
 - **Seamless onboarding** - Smooth window transition instead of app termination
 - **Universal Binary** - Native support for both Intel and Apple Silicon Macs
 - **Menu bar quit button** - Added quit option in settings panel
-- **Universal binary** - Built for both Intel and Apple Silicon Macs
 - **Hidden from sound menu** - No longer appears in macOS sound menu
 
 ## Known Issues
 
-### Intermittent Crash After Onboarding
-
-**Status:** Under Investigation
-
-Some users have reported an intermittent crash that occurs after completing the onboarding process. This issue is not consistently reproducible:
-
-- Crash may occur during or immediately after onboarding validation
-- Does not affect all users or all launches
-- App generally runs stably once past the initial onboarding
-
-**Workaround:** If the app crashes during onboarding, simply relaunch it. Your credentials will be saved and the app should start normally.
-
-*We are actively investigating this issue and working on a fix for the next release.*
+None! All critical bugs have been fixed in v1.0.0.
 
 ## Known Limitations
 
