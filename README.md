@@ -225,6 +225,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Disclaimer
 
+This is an unofficial, third-party application and is not affiliated with, endorsed by, or associated with Plex Inc. in any way. All Plex trademarks and logos are the property of Plex Inc.
+
 Artist and album names shown in screenshots are for demonstration purposes only and do not imply endorsement by the respective artists or labels.
 
 ## Acknowledgments
