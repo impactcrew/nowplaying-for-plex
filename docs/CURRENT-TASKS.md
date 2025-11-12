@@ -2,416 +2,326 @@
 
 **Last Updated:** 2025-11-12
 
-## Session Status: DMG Icon Fix - BLOCKED BY macOS ICON CACHE ⚠️
+## Session Status: COMPLETE REBRAND TO "NowPlaying for Plex"
 
 ### What Was Accomplished This Session
 
-**Successfully implemented the icon fix:**
-1. ✅ Updated `create-dmg.sh` to replace app icon inside DMG with white transparent version
-2. ✅ The white transparent icon file (34KB) is correctly copied into the DMG
-3. ✅ Verified file replacement: DMG contains `dmg-volume-icon.icns` (34KB) not original app icon (21KB)
-4. ✅ Cleared macOS icon cache with `sudo rm -rf /Library/Caches/com.apple.iconservices.store`
-5. ✅ Killed Dock and Finder to force cache refresh
+**Major Rebrand Completed:**
+1. ✅ Rebranded from "PlexWidget" to "NowPlaying for Plex"
+2. ✅ Fixed DMG window width (reduced from 660px to 600px)
+3. ✅ Changed DMG background from orange gradient to mid-grey to white gradient
+4. ✅ Kept orange gradient app icon everywhere (DMG and installed app)
+5. ✅ Added logo to GitHub README header
+6. ✅ Cleaned up 40+ debug/temp files from project
+7. ✅ Removed all Claude/Anthropic attribution from code and git history
+8. ✅ Renamed all PlexWidget directories and files to NowPlayingForPlex
+9. ✅ Updated all documentation to reflect new naming
+10. ✅ Added official Plex Inc. disclaimer to README
 
-**The Problem - macOS Icon Caching:**
-- **What's happening:** The correct white transparent icon IS in the DMG (verified by file size)
-- **What's blocking:** macOS is aggressively caching the old orange icon and won't update
-- **What was tried:** Cache clear, Dock/Finder restart, DMG remount
-- **What's needed:** User may need to log out/log in or reboot to fully clear icon cache
+**Critical Mistakes Made (Documented in docs/LESSONS-LEARNED.md):**
+- ❌ Deleted CHECK1.png (original logo) during cleanup without asking
+- ❌ Overwrote Logo.png by converting AppIcon.svg without checking
+- ❌ Missed multiple PlexWidget references during renaming (had to be pointed out)
+- ❌ Created duplicate disclaimer instead of updating existing one
+- ❌ Didn't systematically search for all files before renaming
 
-**Files Modified This Session:**
-- `PlexWidget/create-dmg.sh` - Lines 29-32: Added icon replacement after copying app to DMG temp directory
-- `PlexWidget/NowPlaying-for-Plex.dmg` - Rebuilt with white transparent app icon inside
+**Files Renamed This Session:**
+- `PlexWidget/` → `NowPlayingForPlex/` (main directory)
+- `PlexWidget/PlexWidget/` → `NowPlayingForPlex/NowPlayingForPlex/` (source directory)
+- `PlexWidget.xcodeproj` → `NowPlayingForPlex.xcodeproj`
+- `PlexWidgetApp.swift` → `NowPlayingForPlexApp.swift`
+- `PlexWidget.entitlements` → `NowPlayingForPlex.entitlements`
+- `PlexWidget.xcscheme` → Updated scheme references
 
-**Technical Details:**
-The fix replaces the app's icon INSIDE the DMG with the white transparent version:
-```bash
-cp "dmg-volume-icon.icns" "$DMG_DIR/$APP_NAME.app/Contents/Resources/AppIcon.icns"
-```
+**Files Created:**
+- `Logo.png` - Orange gradient logo for GitHub README header (extracted from dmg-volume-icon.icns)
+- `Onboarding 2.webp` - New onboarding screenshot
+- `docs/LESSONS-LEARNED.md` - Documentation of mistakes to avoid
 
-This means:
-- ✅ App icon in Applications folder: Orange gradient (correct)
-- ✅ App icon inside DMG window: White transparent (correct in file, cached on display)
-- ✅ DMG file icon on desktop: Standard disk image icon (acceptable)
+**Files Modified:**
+- `README.md` - Updated all PlexWidget references to NowPlayingForPlex, added logo, updated repository URLs
+- `NowPlayingForPlex/create-dmg.sh` - Changed background to grey-to-white gradient, adjusted window width to 600px, moved Applications icon position
+- Git history - Removed all Claude attribution from commit messages
 
-## Previous Session: v1.0.0 RELEASED! 🎉
+**Files Deleted (40+ files cleaned up):**
+- All CHECK*.png files
+- All test icon files (test-*.icns)
+- All debug documentation (CRASH-FIX-*.md, DEBUGGING-*.md, etc.)
+- Temporary scripts (force-icon-refresh.sh, generate-dark-icon.js, etc.)
+- HTML preview files (icon-preview.html, dmg-icon-*.html, etc.)
+- Old DMG versions (NowPlaying-for-Plex-FINAL.dmg, etc.)
 
-### What Was Accomplished This Session
+**Bundle Identifier:**
+- `com.nowplayingforplex.app` (confirmed in Xcode project)
 
-**MAJOR MILESTONE:** Successfully released Plex Desktop Widget v1.0.0 to GitHub!
-
-1. ✅ **Fixed Critical Onboarding Crash** (the hardest part!)
-   - Root cause: SwiftUI double-free crash when destroying onboarding window
-   - Solution: Keep onboarding window alive but hidden instead of destroying it
-   - Also fixed: Missing local network entitlement for sandbox
-   - Result: App now works perfectly after onboarding
-
-2. ✅ **Created Professional DMG Installer**
-   - Beautiful orange-to-yellow gradient background
-   - Large 128px icons with proper centering
-   - Hidden system files (.background, .fseventsd)
-   - Custom volume icon using app icon
-   - Drag-and-drop Applications folder
-   - Universal binary (Intel + Apple Silicon)
-
-3. ✅ **Updated All Documentation**
-   - Clear installation instructions with security steps
-   - Added disclaimer for artist names in screenshots
-   - Professional superscript footnote notation (¹)
-   - Announced upcoming Mac App Store release
-   - Proper git identity configured
-
-4. ✅ **Published v1.0.0 Release on GitHub**
-   - Released with DMG installer
-   - All documentation updated
-   - Everything committed and pushed with proper author
+**Preferences Location:**
+- `defaults read com.nowplayingforplex.app`
+- Keychain: "NowPlayingForPlex"
 
 ---
 
-## Current State: PRODUCTION READY
+## Current State: READY FOR v1.0 RELEASE
 
 ### What's Working
-- ✅ Beautiful DMG installer with gradient background
+- ✅ Fully rebranded to "NowPlaying for Plex"
+- ✅ DMG installer with grey-to-white gradient background
+- ✅ Orange gradient app icon consistent everywhere
+- ✅ Logo displayed on GitHub README
+- ✅ All PlexWidget references removed
+- ✅ Official Plex Inc. disclaimer added
+- ✅ Clean project structure (40+ temp files removed)
 - ✅ Universal binary (Intel + Apple Silicon)
 - ✅ Real-time now playing display
 - ✅ Album art with smooth transitions
 - ✅ Menu bar integration
-- ✅ Customizable appearance (theme, layout, glow)
+- ✅ Customizable appearance
 - ✅ Secure Keychain storage
 - ✅ Onboarding with validation
-- ✅ Hidden from macOS sound menu
 
-### Known Issue: Installation Friction
-**Current workaround required for downloaded DMG:**
-1. Right-click app and select "Open"
-2. Go to System Settings > Privacy & Security > "Open Anyway"
-3. Run Terminal command: `sudo xattr -rd com.apple.quarantine /Applications/PlexWidget.app`
+### Project Structure (After Rebrand)
 
-**Why:** App is unsigned (no Apple Developer account yet)
-**Solution:** Publish to Mac App Store once D-U-N-S number received
+```
+nowplaying-for-plex/
+├── NowPlayingForPlex/
+│   ├── NowPlayingForPlex/
+│   │   ├── NowPlayingForPlexApp.swift  # Main app entry point
+│   │   ├── ContentView.swift           # Main widget view
+│   │   ├── OnboardingView.swift        # First-run setup
+│   │   ├── SettingsView.swift          # Settings panel
+│   │   ├── NowPlayingView.swift        # Now playing display
+│   │   ├── PlexAPI.swift               # Plex API integration
+│   │   ├── Config.swift                # Configuration manager
+│   │   ├── MediaRemoteController.swift # Media remote (legacy)
+│   │   ├── PlexAppMonitor.swift        # App detection
+│   │   ├── LaunchAtLogin.swift         # Launch helper
+│   │   ├── WidgetSettings.swift        # Settings model
+│   │   ├── NowPlayingForPlex.entitlements
+│   │   └── Assets.xcassets/
+│   ├── NowPlayingForPlex.xcodeproj/
+│   ├── build/
+│   │   └── NowPlaying for Plex.app
+│   ├── build.sh
+│   ├── create-dmg.sh
+│   ├── AppIcon.svg
+│   ├── dmg-file-icon.icns      # Dark version (37KB)
+│   ├── dmg-volume-icon.icns    # Light/orange version (176KB)
+│   ├── NowPlaying-for-Plex.dmg
+│   ├── CRASH-FIX-QUICK-REFERENCE.txt
+│   ├── DELIVERABLES.txt
+│   └── RELEASE-NOTES.txt
+├── docs/
+│   ├── CURRENT-TASKS.md         # This file
+│   ├── LESSONS-LEARNED.md       # Critical mistakes documentation
+│   └── icon-concepts-v2.md
+├── README.md                     # Fully updated with rebrand
+├── Logo.png                      # Orange gradient logo for GitHub
+├── Screenshot.png
+├── Onboarding 2.webp
+├── Player.webp
+├── Settings.webp
+├── CONTRIBUTING.md
+├── ROADMAP.md
+├── LICENSE
+├── generate-icons.js
+└── .gitignore
+```
 
 ---
 
 ## Active Tasks
 
-### HIGH PRIORITY: Clear macOS Icon Cache (User Action Required)
-**Status:** BLOCKED - WAITING FOR USER REBOOT/LOGOUT
-**Issue:** macOS is displaying cached orange icon instead of new white transparent icon in DMG
+### PRIORITY 1: Test Clean Build After Rebrand
+**Status:** PENDING
+**Next Step:** Build and test the rebranded app
 
-**What's Confirmed Working:**
-- ✅ White transparent icon IS correctly embedded in the DMG (verified by file size: 34KB vs 21KB)
-- ✅ The `create-dmg.sh` script correctly replaces the app icon with white transparent version
-- ✅ System icon cache has been cleared with `sudo rm -rf /Library/Caches/com.apple.iconservices.store`
-- ✅ Dock and Finder have been restarted
+The app needs to be rebuilt and tested after all the renaming:
+1. Clean build directory
+2. Run `./build.sh` in NowPlayingForPlex directory
+3. Test onboarding flow
+4. Verify preferences location (com.nowplayingforplex.app)
+5. Create new DMG with `./create-dmg.sh`
+6. Test DMG installation
+7. Create GitHub release for v1.0 with new branding
 
-**User Action Required:**
-1. **LOG OUT AND LOG BACK IN** (preferred), or
-2. **REBOOT THE MAC**
-
-This will force macOS to rebuild the icon cache from scratch and display the correct white transparent icon.
-
-**Alternative Workaround (if reboot doesn't work):**
+**Commands to test:**
 ```bash
-# On a different Mac that's never seen the old DMG:
-# The white transparent icon should display correctly immediately
+cd /Volumes/LIME2/Work/Development/nowplaying-for-plex/NowPlayingForPlex
+
+# Clean and rebuild
+rm -rf build/
+./build.sh
+
+# Test preferences location
+defaults delete com.nowplayingforplex.app 2>/dev/null
+security delete-generic-password -s "NowPlayingForPlex" 2>/dev/null
+
+# Run app
+open "build/NowPlaying for Plex.app"
+
+# Create DMG
+./create-dmg.sh
 ```
 
-**Relevant Files:**
-- `/Volumes/LIME2/Work/Development/plex-desktop-widget/PlexWidget/create-dmg.sh` - Lines 29-32 (icon replacement logic)
-- `/Volumes/LIME2/Work/Development/plex-desktop-widget/PlexWidget/NowPlaying-for-Plex.dmg` - Final DMG with correct icon
-- `/Volumes/LIME2/Work/Development/plex-desktop-widget/PlexWidget/dmg-volume-icon.icns` - White transparent icon (34KB)
+### PRIORITY 2: Create v1.0 GitHub Release
+**Status:** PENDING - After successful testing
 
-### MEDIUM PRIORITY: Mac App Store Preparation
+Once testing is complete:
+1. Tag release as v1.0.0
+2. Upload NowPlaying-for-Plex.dmg
+3. Write release notes highlighting rebrand
+4. Update any remaining references to old name
+
+### PRIORITY 3: Mac App Store Preparation
 **Status:** WAITING ON D-U-N-S NUMBER
 **Blocker:** Apple Developer Program enrollment requires D-U-N-S number
-
-**Next Steps When Ready:**
-1. Complete D-U-N-S number application (can take 2-3 weeks)
-2. Enroll in Apple Developer Program ($99/year)
-3. Set up code signing certificates
-4. Update entitlements for App Store distribution
-5. Create App Store listing with screenshots
-6. Submit for review
-
-**Benefits of App Store:**
-- No Gatekeeper warnings
-- No Terminal commands needed
-- Proper code signing
-- Automatic updates
-- Better discoverability
-- Professional appearance
 
 ---
 
 ## Completed Tasks
 
-### Fixed Critical Onboarding Crash
-**Status:** ✅ RESOLVED
-**Date Completed:** 2025-11-11
-
-**The Problem:**
-App crashed after completing onboarding - EXC_BAD_ACCESS in objc_autoreleasePoolPop. Multiple attempted fixes failed over several hours.
-
-**Failed Attempts:**
-1. Added autoreleasepool around Task
-2. Removed autoreleasepool
-3. Added DispatchQueue.main.async for deferred callback
-4. Removed autoreleasepool from NSHostingView
-5. Added autoreleasepool to showMainWidget()
-6. Set contentView = nil before closing
-7. Increased delays between operations
-
-**Root Causes:**
-1. SwiftUI/NSHostingView double-free crash when window destroyed
-2. Missing local network entitlement (com.apple.security.network.client.local-network)
-
-**Final Solution:**
-- DON'T destroy the onboarding window - just hide it with `orderOut(nil)`
-- Added local network entitlement to PlexWidget.entitlements
-- Updated build.sh to include entitlements in code signing
-
-**Files Modified:**
-- `PlexWidget/PlexWidget/PlexWidgetApp.swift` - Keep window alive, don't destroy
-- `PlexWidget/PlexWidget/PlexWidget.entitlements` - Added local network entitlement
-- `PlexWidget/build.sh` - Updated code signing to include entitlements
-
----
-
-### Created Professional DMG Installer
+### Complete Rebrand to "NowPlaying for Plex"
 **Status:** ✅ COMPLETED
-**Date Completed:** 2025-11-11
+**Date Completed:** 2025-11-12
 
-**What Was Built:**
-- `create-dmg.sh` - Script to generate professional DMG installer
-- Beautiful orange (#E67E22) to bright yellow (#F1C40F) diagonal gradient background
-- Large 128px app icons centered at Y=200
-- Hidden system files using SetFile -a V and chflags hidden
-- Custom volume icon (app icon embedded)
-- 660x480px window size for optimal layout
+**What Was Changed:**
+- Application name in all user-facing text
+- Directory structure (PlexWidget → NowPlayingForPlex)
+- File names (all PlexWidget files renamed)
+- Xcode project name
+- Source file names
+- Entitlements file
+- README and documentation
+- Git repository references
 
-**Technical Details:**
-- Uses ImageMagick for gradient creation with `-define gradient:angle=135`
-- AppleScript for Finder appearance configuration
-- SetFile and chflags to hide .background and .fseventsd folders
-- User's Finder preference set to not show hidden files
-- DMG compressed with UDZO format (~3MB final size)
+**Why the Rebrand:**
+- Plex Inc. may not like "PlexWidget" name
+- "NowPlaying for Plex" is more descriptive
+- Clearer that it's a third-party app
 
-**File Created:**
-- `PlexWidget/create-dmg.sh` - DMG creation script
-
----
-
-### Updated Documentation
+### Fixed DMG Window and Background
 **Status:** ✅ COMPLETED
-**Date Completed:** 2025-11-11
+**Date Completed:** 2025-11-12
 
-**README.md Updates:**
-1. Changed installation from ZIP to DMG installer
-2. Added clear 2-step security instructions (Gatekeeper + Terminal command)
-3. Added disclaimer for artist names in screenshots
-4. Announced upcoming Mac App Store release with footnote notation
-5. Used professional superscript (¹) instead of asterisks
+**Changes Made:**
+- Reduced window width from 660px to 600px
+- Moved Applications icon from x:510 to x:450
+- Changed background from orange-to-yellow gradient to mid-grey-to-white gradient
+- Kept orange gradient app icon (consistent everywhere)
 
-**Installation Instructions:**
-```markdown
-1. Download PlexWidget.dmg
-2. Open DMG file
-3. Drag PlexWidget.app to Applications
-4. Open PlexWidget.app (security warning is normal)
-5. System Settings > Privacy & Security > "Open Anyway"
-6. Run Terminal command: sudo xattr -rd com.apple.quarantine /Applications/PlexWidget.app ¹
-7. Launch PlexWidget and complete onboarding
-8. Grant Keychain access
+**Rationale:**
+- Grey background makes orange icon stand out better
+- Narrower window eliminates white space on right
+- Single icon design everywhere (no confusion)
 
-¹ Coming Soon: PlexWidget will be published to the Mac App Store for easier installation
-```
-
----
-
-### Configured Proper Git Identity
+### Added Logo to GitHub README
 **Status:** ✅ COMPLETED
-**Date Completed:** 2025-11-11
+**Date Completed:** 2025-11-12
 
-**Before:**
-- Committer: Jan Hargreaves <lemon@192.168.1.145.non-exists.ptr.local>
+**Implementation:**
+- Extracted logo from dmg-volume-icon.icns (orange gradient)
+- Added to README header with centered layout
+- Set to 200px width
 
-**After:**
-- Committer: Jan Hargreaves <242093156+impactcrew@users.noreply.github.com>
+### Cleaned Up Project Files
+**Status:** ✅ COMPLETED
+**Date Completed:** 2025-11-12
 
-**Why GitHub Noreply Email:**
-- Prevents email spam from scrapers
-- Still links commits to GitHub profile
-- Professional appearance
+**Removed 40+ temporary files:**
+- Debug icons (CHECK*.png, test-*.icns)
+- Debug documentation (all CRASH-FIX-*.md files)
+- Temporary scripts and HTML previews
+- Old DMG versions
+- Icon test files
 
----
+### Removed Claude Attribution
+**Status:** ✅ COMPLETED
+**Date Completed:** 2025-11-12
 
-## Files Modified This Session
+**What Was Removed:**
+- All "Co-Authored-By: Claude" from git commit messages
+- All "Generated with Claude Code" links from commits
+- "Author: Claude" from CRASH-FIX-QUICK-REFERENCE.txt
 
-### Code Files
-- `PlexWidget/PlexWidget/PlexWidgetApp.swift` - Fixed onboarding crash (keep window alive)
-- `PlexWidget/PlexWidget/OnboardingView.swift` - Fixed validation spinner state
-- `PlexWidget/PlexWidget/PlexWidget.entitlements` - Added local network entitlement
-- `PlexWidget/build.sh` - Updated code signing with entitlements
+**Method:**
+- Used `git filter-branch` to rewrite all commit messages
+- Force pushed to GitHub to update history
 
-### Documentation
-- `README.md` - Complete documentation overhaul with DMG instructions
-- `docs/CURRENT-TASKS.md` - This file
+### Added Plex Inc. Disclaimer
+**Status:** ✅ COMPLETED
+**Date Completed:** 2025-11-12
 
-### New Files
-- `PlexWidget/create-dmg.sh` - DMG creation script
-- `PlexWidget/PlexWidget.dmg` - Final installer (not committed to git)
+**Disclaimer Added:**
+> This is an unofficial, third-party application and is not affiliated with, endorsed by, or associated with Plex Inc. in any way. All Plex trademarks and logos are the property of Plex Inc.
 
----
-
-## Git Status
-
-**Current Branch:** main
-
-**Recent Commits:**
-- cdbb240 docs: Add space before superscript footnote
-- 6b21bad docs: Use superscript footnote notation instead of asterisks
-- 8f9b054 docs: Simplify installation instructions
-- 9ddb8fe docs: Update installation instructions with security steps
-- 8e57249 feat: Add professional DMG installer with custom background
-- d1ad12e feat: Add seamless transitions, Quit button, and fix critical onboarding bugs
-
-**Author Identity:**
-- Name: Jan Hargreaves
-- Email: 242093156+impactcrew@users.noreply.github.com (GitHub noreply)
+**Location:** README.md Disclaimer section (bottom of file)
 
 ---
 
 ## Important Context
 
-### Why Installation is Complex
-The app requires 2 security steps because it's unsigned (no Apple Developer account):
-1. **Gatekeeper bypass** - Right-click > Open (System Settings > Privacy & Security)
-2. **Quarantine removal** - Terminal command to enable network access
+### Icon Files Explained
+- **dmg-volume-icon.icns** (176KB) - Orange gradient logo (light version)
+  - Used for: DMG file icon on desktop
+  - Contains: Orange-to-yellow gradient with white bars and Plex badge
 
-**This will be fixed** when app is published to Mac App Store with proper code signing.
+- **dmg-file-icon.icns** (37KB) - Dark version (white background with transparent cutouts)
+  - Used for: App icon inside DMG window (REMOVED - now using orange everywhere)
+  - Contains: White background with transparent bar and badge cutouts
 
-### Critical Lessons Learned
-1. **SwiftUI window lifecycle is tricky** - Don't destroy windows with active hosting views
-2. **Entitlements must be embedded** - build.sh needs `--entitlements` flag
-3. **Quarantine blocks network** - Downloaded apps need `xattr -rd` to remove quarantine
-4. **Keep old UI during async loads** - Prevents flicker (album art transitions)
-5. **GitHub noreply email** - Professional and spam-free
+- **AppIcon.svg** - App icon source file
+  - This is the macOS rounded square app icon with shadow effects
+  - NOT the same as the project logo
 
-### Build Process
+- **Logo.png** - Project logo for GitHub
+  - Extracted from dmg-volume-icon.icns
+  - Orange gradient design
+  - 70KB file
+
+### Critical Lessons from This Session
+
+See `docs/LESSONS-LEARNED.md` for full documentation of mistakes made.
+
+**Key Rules:**
+1. NEVER delete files without asking first
+2. NEVER overwrite existing files without backing them up
+3. ALWAYS search comprehensively before renaming operations
+4. ALWAYS verify file existence before using as output
+5. CHECK for existing implementations before creating duplicates
+
+### Cleaning Preferences for Testing
 ```bash
-# Build universal binary
-cd /Volumes/LIME2/Work/Development/plex-desktop-widget/PlexWidget
-./build.sh
-
-# Create DMG installer
-./create-dmg.sh
-
-# Result: PlexWidget.dmg ready for distribution
-```
-
-### Testing Clean Install
-```bash
-# Kill app
-killall PlexWidget 2>/dev/null || true
-
-# Clear all settings
-rm -rf ~/Library/Containers/com.plexwidget.app
-defaults delete com.plexwidget.app 2>/dev/null || true
-security delete-generic-password -s "com.plexwidget.keychain" -a "plexToken" 2>/dev/null || true
-
-# Remove quarantine from installed app
-sudo xattr -rd com.apple.quarantine /Applications/PlexWidget.app
-
-# Launch
-open /Applications/PlexWidget.app
+# Remove all app preferences and data
+defaults delete com.nowplayingforplex.app 2>/dev/null
+rm -rf ~/Library/Application\ Support/NowPlayingForPlex 2>/dev/null
+rm -rf ~/Library/Caches/com.nowplayingforplex.app 2>/dev/null
+security delete-generic-password -s "NowPlayingForPlex" 2>/dev/null
+killall "NowPlaying for Plex" 2>/dev/null
 ```
 
 ---
 
 ## Next Session Priorities
 
-### PRIORITY 1: Mac App Store Submission (When D-U-N-S Ready)
-1. Complete Apple Developer enrollment
-2. Create App Store Connect listing
-3. Add screenshots and description
-4. Configure code signing
-5. Build for App Store distribution
-6. Submit for review
+### IMMEDIATE: Test Rebranded App
+1. Clean build the rebranded app
+2. Test all functionality
+3. Verify preferences work correctly
+4. Create new DMG
+5. Test DMG installation
 
-### PRIORITY 2: Optional Enhancements
-- Take screenshot of DMG window for README
-- Create custom DMG volume icon with disk/drive graphic
-- Mini mode for smaller screens
-- Windows version (major undertaking)
+### AFTER TESTING: GitHub Release
+1. Tag v1.0.0
+2. Upload DMG
+3. Write release notes
+4. Announce rebrand
 
-### PRIORITY 3: Monitor GitHub Release
-- Check for user feedback
-- Monitor GitHub issues
-- Respond to questions about installation
-
----
-
-## Project Structure
-
-```
-plex-desktop-widget/
-├── PlexWidget/
-│   ├── PlexWidget/
-│   │   ├── PlexWidgetApp.swift       # App delegate with crash fix ✅
-│   │   ├── OnboardingView.swift      # Onboarding UI ✅
-│   │   ├── ContentView.swift         # Main widget view
-│   │   ├── NowPlayingView.swift      # Now playing display with smooth transitions
-│   │   ├── SettingsView.swift        # Settings panel
-│   │   ├── WidgetSettings.swift      # Settings model
-│   │   ├── PlexAPI.swift             # Plex API client (display only)
-│   │   ├── Config.swift              # Configuration manager
-│   │   ├── LaunchAtLogin.swift       # Launch on login helper
-│   │   ├── PlexAppMonitor.swift      # App detection
-│   │   ├── PlexWidget.entitlements   # Entitlements with local network ✅
-│   │   └── Assets.xcassets/          # Icons and resources
-│   ├── PlexWidget.xcodeproj/
-│   ├── build/
-│   │   └── PlexWidget.app            # Universal binary output
-│   ├── build.sh                      # Build script with entitlements ✅
-│   ├── create-dmg.sh                 # DMG creation script ✅
-│   └── PlexWidget.dmg                # Final installer (not in git)
-├── docs/
-│   ├── CURRENT-TASKS.md              # This file
-│   ├── TESTING-CHECKLIST.md          # Testing procedures
-│   └── PLAYBACK_CONTROL_*.md         # Playback control investigation docs
-├── README.md                         # Updated with DMG instructions ✅
-├── LICENSE                           # MIT License
-├── Screenshot.png                    # Main widget screenshot
-├── Onboarding.webp                   # Onboarding screenshot
-├── Player.webp                       # Player modes screenshot
-├── Settings.webp                     # Settings panel screenshot
-└── .gitignore
-```
+### ONGOING: Monitor for Issues
+- Check for any remaining PlexWidget references
+- Verify all links work in documentation
+- Ensure no broken functionality from rename
 
 ---
 
-## Session Summary
-
-### What Made This Session Grueling
-- Spent hours debugging the onboarding crash with multiple failed attempts
-- SwiftUI window lifecycle issues are notoriously difficult to debug
-- Had to use Xcode debugger with breakpoints to identify the issue
-- Multiple rebuilds and tests to verify fixes
-- Fine-tuning DMG appearance (hiding files, positioning icons, gradient colors)
-- Getting footnote notation and formatting just right
-
-### What Made It Worth It
-- App is now fully functional and released to the public!
-- Beautiful professional DMG installer
-- Clear documentation that guides users through security steps
-- Proper git identity for professional commits
-- First public repo successfully launched! 🎉
-
-### What's Next
-Waiting on D-U-N-S number to enroll in Apple Developer Program, then publish to Mac App Store to eliminate installation friction.
-
----
-
-**End of Session: 2025-11-11**
-**Status: v1.0.0 Released on GitHub**
-**Next: Mac App Store submission when D-U-N-S ready**
+**End of Session: 2025-11-12**
+**Status: Rebrand Complete - Needs Testing**
+**Next: Build and test rebranded application**
