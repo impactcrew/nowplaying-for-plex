@@ -25,9 +25,9 @@ struct OnboardingView: View {
                         Image(nsImage: NSImage(named: "AppIcon") ?? NSImage())
                             .resizable()
                             .frame(width: 48, height: 48)
-                            .accessibilityLabel("Plex application icon")
+                            .accessibilityLabel("NowPlaying for Plex application icon")
 
-                        Text("Plex Desktop Widget")
+                        Text("NowPlaying for Plex")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
                     }
@@ -37,7 +37,7 @@ struct OnboardingView: View {
                         .foregroundColor(.white.opacity(0.9))
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Plex Desktop Widget. Let's get you set up!")
+                .accessibilityLabel("NowPlaying for Plex. Let's get you set up!")
 
                 // Instructions
                 VStack(alignment: .leading, spacing: 16) {
