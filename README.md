@@ -63,7 +63,7 @@ Download the DMG installer from the [Releases](https://github.com/impactcrew/ple
 If you want to build from source:
 
 1. Clone this repository
-2. Navigate to `PlexWidget/` directory
+2. Navigate to `NowPlayingForPlex/` directory
 3. Run `./build.sh` to create universal binary
 4. Copy `build/NowPlaying for Plex.app` to your Applications folder
 
@@ -115,8 +115,8 @@ Built with modern Swift and SwiftUI:
 
 ```bash
 # Clone the repository
-git clone https://github.com/impactcrew/plex-desktop-widget.git
-cd plex-desktop-widget/PlexWidget
+git clone https://github.com/impactcrew/nowplaying-for-plex.git
+cd nowplaying-for-plex/NowPlayingForPlex
 
 # Run the build script (creates universal binary)
 ./build.sh
@@ -131,7 +131,7 @@ cp -r "build/NowPlaying for Plex.app" /Applications/
 ### Project Structure
 
 ```
-PlexWidget/
+NowPlayingForPlex/
 ├── PlexWidget/
 │   ├── PlexWidgetApp.swift       # Main app entry point
 │   ├── ContentView.swift          # Main widget view
