@@ -11,7 +11,7 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 
 ![NowPlaying for Plex](Screenshot.png)
 
-### Onboarding & Settings
+### Onboarding
 <img src="Onboarding 2.webp" alt="Onboarding screen">
 
 ### Customization Options
