@@ -1,9 +1,13 @@
-# NowPlaying for Plex
+<div align="center">
+  <img src="Logo.png" alt="NowPlaying for Plex" width="200">
 
-![Version](https://img.shields.io/badge/version-1.0-blue.svg)
-![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
-![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+  # NowPlaying for Plex
+
+  ![Version](https://img.shields.io/badge/version-1.0-blue.svg)
+  ![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
+  ![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)
+  ![License](https://img.shields.io/badge/license-MIT-green.svg)
+</div>
 
 A beautiful, lightweight macOS menu bar widget that displays your currently playing Plex media with album artwork and track information in real-time. Features a customizable floating overlay and smooth transitions.
 
