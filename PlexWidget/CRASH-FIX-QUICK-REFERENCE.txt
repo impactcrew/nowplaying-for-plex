@@ -146,7 +146,6 @@ COMMIT INFORMATION
 ================================================================================
 
 Commit: c1c2f6d
-Author: Claude
 Message: fix: Resolve EXC_BAD_ACCESS crash in onboarding with autorelease
          pool stabilization
 Date: 2025-11-11

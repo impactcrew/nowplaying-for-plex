@@ -30,14 +30,14 @@ cp -R "$SOURCE_APP" "$DMG_DIR/"
 echo "Creating Applications symlink..."
 ln -s /Applications "$DMG_DIR/Applications"
 
-# Create beautiful orange-to-yellow gradient background (smooth diagonal)
-echo "Creating orange-to-yellow gradient background..."
+# Create mid grey to white gradient background
+echo "Creating mid grey to white gradient background..."
 
-# Create a smooth 3-stop diagonal gradient matching the app icon design
-# Orange #FF6B35 (top-left) → Blend #FFAB3B (75%) → Yellow #FFC93C (bottom-right)
-convert -size 660x400 xc: \
+# Create a smooth diagonal gradient from mid grey to white
+# Mid Grey #808080 (top-left) → White #FFFFFF (bottom-right)
+convert -size 600x400 xc: \
     -sparse-color Barycentric \
-    "0,0 #FF6B35  495,0 #FFAB3B  660,400 #FFC93C" \
+    "0,0 #808080  600,400 #FFFFFF" \
     dmg_background.png
 echo "✓ Gradient created"
 
@@ -45,9 +45,8 @@ echo "✓ Gradient created"
 mkdir -p "$DMG_DIR/.background"
 cp dmg_background.png "$DMG_DIR/.background/background.png"
 
-# Copy app icon for DMG volume icon
-# TODO: This will use the new landscape icon once we regenerate AppIcon.icns
-cp "$SOURCE_APP/Contents/Resources/AppIcon.icns" "$DMG_DIR/.VolumeIcon.icns"
+# Note: Don't copy .VolumeIcon.icns here - hdiutil create may skip dotfiles
+# We'll copy it after mounting the DMG
 
 # Create temporary DMG
 echo "Creating temporary DMG..."
@@ -60,6 +59,17 @@ hdiutil attach "${DMG_NAME}_temp.dmg" -mountpoint "$MOUNT_DIR"
 
 # Wait for mount to complete
 sleep 2
+
+# Copy DMG volume icon AFTER mounting (LIGHT VERSION - orange gradient for desktop)
+echo "Setting volume icon..."
+cp "dmg-volume-icon.icns" "$MOUNT_DIR/.VolumeIcon.icns"
+
+# Verify copy succeeded
+if [ ! -f "$MOUNT_DIR/.VolumeIcon.icns" ]; then
+    echo "✗ Error: Failed to copy volume icon!"
+    exit 1
+fi
+echo "✓ Volume icon copied successfully"
 
 # Hide the folders using SetFile (makes them invisible to Finder)
 echo "Hiding system files..."
@@ -78,14 +88,18 @@ if [ -f "$MOUNT_DIR/.DS_Store" ]; then
     chflags hidden "$MOUNT_DIR/.DS_Store" 2>/dev/null || true
 fi
 
-# Hide the volume icon file
+# Set attributes on volume icon file
 if [ -f "$MOUNT_DIR/.VolumeIcon.icns" ]; then
+    echo "Setting volume icon attributes..."
     SetFile -a V "$MOUNT_DIR/.VolumeIcon.icns"
     chflags hidden "$MOUNT_DIR/.VolumeIcon.icns"
+    echo "✓ Volume icon hidden"
 fi
 
 # Set custom icon attribute on the volume
+echo "Setting custom icon attribute on volume..."
 SetFile -a C "$MOUNT_DIR"
+echo "✓ Custom icon attribute set"
 
 # Set user's Finder preference to not show hidden files (temporary)
 defaults write com.apple.finder AppleShowAllFiles -bool false
@@ -99,10 +113,10 @@ tell application "Finder"
     tell disk "$APP_NAME"
         open
 
-        -- Set window bounds (increased height for better icon visibility)
+        -- Set window bounds (optimized to eliminate white space)
         -- Window: x, y, width, height from top-left
-        -- Size: 660x480 (added 80px height for better spacing)
-        set the bounds of container window to {100, 100, 760, 580}
+        -- Size: 600x480 (reduced width to fit icons with minimal padding)
+        set the bounds of container window to {100, 100, 700, 580}
 
         -- Basic window settings
         set current view of container window to icon view
@@ -127,7 +141,7 @@ tell application "Finder"
         -- Y position: 200 provides optimal centering with 128px icons + ~40px label
         -- This accounts for visual weight and creates better spacing from edges
         set position of item "$APP_NAME.app" to {150, 200}
-        set position of item "Applications" to {510, 200}
+        set position of item "Applications" to {450, 200}
 
         -- Force update
         update without registering applications
@@ -145,21 +159,63 @@ EOF
 # Additional wait to ensure settings are saved
 sleep 2
 
+# Verify volume icon is present and set attributes
+echo "Finalizing volume icon..."
+if [ -f "$MOUNT_DIR/.VolumeIcon.icns" ]; then
+    echo "✓ Volume icon still present after AppleScript"
+    SetFile -a V "$MOUNT_DIR/.VolumeIcon.icns"
+    chflags hidden "$MOUNT_DIR/.VolumeIcon.icns"
+    SetFile -a C "$MOUNT_DIR"
+    echo "✓ Volume icon configured"
+else
+    echo "✗ Warning: Volume icon was removed by AppleScript!"
+    echo "Re-adding volume icon..."
+    cp "dmg-volume-icon.icns" "$MOUNT_DIR/.VolumeIcon.icns"
+    if [ -f "$MOUNT_DIR/.VolumeIcon.icns" ]; then
+        SetFile -a V "$MOUNT_DIR/.VolumeIcon.icns"
+        chflags hidden "$MOUNT_DIR/.VolumeIcon.icns"
+        SetFile -a C "$MOUNT_DIR"
+        echo "✓ Volume icon re-added successfully"
+    else
+        echo "✗ Error: Failed to re-add volume icon!"
+    fi
+fi
+
+# Force sync to ensure changes are written
+sync
+
 # Unmount
 echo "Finalizing DMG..."
-hdiutil detach "$MOUNT_DIR"
+hdiutil detach "$MOUNT_DIR" -force
 
 # Wait for unmount
-sleep 1
+sleep 2
 
 # Convert to compressed, read-only DMG
+# Note: hdiutil convert should preserve the .VolumeIcon.icns file
 echo "Compressing DMG..."
-hdiutil convert "${DMG_NAME}_temp.dmg" -format UDZO -o "${DMG_NAME}.dmg"
+hdiutil convert "${DMG_NAME}_temp.dmg" -format UDZO -imagekey zlib-level=9 -o "${DMG_NAME}.dmg"
 
-# Clean up
+# Clean up temp files
 rm -f "${DMG_NAME}_temp.dmg"
 rm -rf "$DMG_DIR"
 rm -f dmg_background.png
+
+# Set custom icon on the DMG file itself (light gradient version)
+echo "Setting custom icon on DMG file..."
+# Create temporary resource fork directory
+mkdir -p "${DMG_NAME}.dmg.temp"
+# Copy icon to resource fork
+cp dmg-file-icon.icns "${DMG_NAME}.dmg.temp/Icon"$'\r'
+# Set custom icon attribute on DMG file
+SetFile -a C "${DMG_NAME}.dmg"
+# Apply icon using sips (alternative method)
+sips -i dmg-file-icon.icns
+DeRez -only icns dmg-file-icon.icns > "${DMG_NAME}.dmg.temp/icns.rsrc"
+Rez -append "${DMG_NAME}.dmg.temp/icns.rsrc" -o "${DMG_NAME}.dmg"
+SetFile -a C "${DMG_NAME}.dmg"
+rm -rf "${DMG_NAME}.dmg.temp"
+echo "✓ DMG file icon set"
 
 echo ""
 echo "=========================================="
