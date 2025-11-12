@@ -133,7 +133,7 @@ cp -r "build/NowPlaying for Plex.app" /Applications/
 ```
 NowPlayingForPlex/
 ├── NowPlayingForPlex/
-│   ├── PlexWidgetApp.swift       # Main app entry point
+│   ├── NowPlayingForPlexApp.swift # Main app entry point
 │   ├── ContentView.swift          # Main widget view
 │   ├── OnboardingView.swift       # First-run setup
 │   ├── SettingsView.swift         # Settings panel
