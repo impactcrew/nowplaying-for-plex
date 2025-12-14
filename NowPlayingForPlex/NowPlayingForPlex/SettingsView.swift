@@ -117,70 +117,60 @@ struct SettingsView: View {
                     .fill(Color.white.opacity(0.1))
                     .frame(height: 1)
 
-                // Server Status
-                HStack {
-                    Circle()
-                        .fill(isServerReachable ?
-                            Color(red: 40/255, green: 200/255, blue: 120/255) :
-                            Color(red: 255/255, green: 80/255, blue: 150/255))
-                        .frame(width: 8, height: 8)
+                // Server Status + Quit (combined section)
+                HStack(alignment: .top) {
+                    // Left side: Server info
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(isServerReachable ?
+                                    Color(red: 40/255, green: 200/255, blue: 120/255) :
+                                    Color(red: 255/255, green: 80/255, blue: 150/255))
+                                .frame(width: 8, height: 8)
 
-                    Text(displayUrl)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                            Text(displayUrl)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+                        }
+
+                        Button(action: {
+                            showResetConfirmation = true
+                        }) {
+                            Text("Change Server")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Reset", role: .destructive) {
+                            ConfigManager.shared.clearConfig()
+                            NotificationCenter.default.post(name: NSNotification.Name("ShowOnboarding"), object: nil)
+                        }
+                    } message: {
+                        Text("This will clear your server settings and show the setup screen.")
+                    }
 
                     Spacer()
 
+                    // Right side: Quit button
                     Button(action: {
-                        showResetConfirmation = true
+                        NSApplication.shared.terminate(nil)
                     }) {
-                        Text("Reset")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(6)
+                        HStack(spacing: 6) {
+                            Image(systemName: "power")
+                                .font(.system(size: 12, weight: .medium))
+                            Text("Quit")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
                     }
                     .buttonStyle(PlainButtonStyle())
-                }
-                .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
-                    Button("Cancel", role: .cancel) { }
-                    Button("Reset", role: .destructive) {
-                        ConfigManager.shared.clearConfig()
-                        NotificationCenter.default.post(name: NSNotification.Name("ShowOnboarding"), object: nil)
-                    }
-                } message: {
-                    Text("This will clear your server settings and show the setup screen.")
-                }
-
-                // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(height: 1)
-
-                // Quit NowPlaying for Plex
-                Button(action: {
-                    NSApplication.shared.terminate(nil)
-                }) {
-                    HStack {
-                        Image(systemName: "power")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-
-                        Text("Quit NowPlaying for Plex")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
-
-                        Spacer()
-                    }
-                    .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(10)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .onHover { hovering in
-                    // Hover effect handled by cursor change
                 }
             }
             .padding(24)
