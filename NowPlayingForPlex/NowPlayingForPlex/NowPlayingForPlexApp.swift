@@ -31,6 +31,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var clickOutsideMonitor: Any?
     var cachedConfig: PlexConfig? // Cache config to avoid multiple Keychain accesses
 
+    // Keys for saving window position
+    private let windowPositionXKey = "windowPositionX"
+    private let windowPositionYKey = "windowPositionY"
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Listen for reset/reconfigure requests
         NotificationCenter.default.addObserver(
@@ -166,8 +170,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let screenWidth = NSScreen.main?.frame.width ?? 1920
         let windowWidth: CGFloat = 592  // 552 + 40 for padding
         let windowHeight: CGFloat = 232  // 192 + 40 for padding
-        let xPosition = screenWidth - windowWidth - 20
-        let yPosition: CGFloat = 20
+
+        // Restore saved position or use default (bottom-right corner)
+        let xPosition: CGFloat
+        let yPosition: CGFloat
+        if let savedX = UserDefaults.standard.object(forKey: windowPositionXKey) as? CGFloat,
+           let savedY = UserDefaults.standard.object(forKey: windowPositionYKey) as? CGFloat {
+            xPosition = savedX
+            yPosition = savedY
+        } else {
+            xPosition = screenWidth - windowWidth - 20
+            yPosition = 20
+        }
 
         window = NSWindow(
             contentRect: NSRect(x: xPosition, y: yPosition, width: windowWidth, height: windowHeight),
@@ -190,6 +204,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Prevent window from appearing in Mission Control
         window.collectionBehavior.insert(.transient)
+
+        // Listen for window move events to save position
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidMove),
+            name: NSWindow.didMoveNotification,
+            object: window
+        )
+    }
+
+    @objc func windowDidMove(_ notification: Notification) {
+        guard let movedWindow = notification.object as? NSWindow,
+              movedWindow === window else { return }
+
+        // Save window position
+        let frame = movedWindow.frame
+        UserDefaults.standard.set(frame.origin.x, forKey: windowPositionXKey)
+        UserDefaults.standard.set(frame.origin.y, forKey: windowPositionYKey)
     }
 
     @objc func toggleSettings() {
