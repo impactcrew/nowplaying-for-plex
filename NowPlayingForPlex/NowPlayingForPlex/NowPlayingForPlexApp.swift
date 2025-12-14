@@ -32,6 +32,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var cachedConfig: PlexConfig? // Cache config to avoid multiple Keychain accesses
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Listen for reset/reconfigure requests
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowOnboarding),
+            name: NSNotification.Name("ShowOnboarding"),
+            object: nil
+        )
         // Check if user has completed onboarding AND config can be loaded
         // This prevents corrupted state where URL exists but token doesn't
         if !ConfigManager.shared.hasCompletedOnboarding() || ConfigManager.shared.loadConfig() == nil {
@@ -260,5 +267,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
+    }
+
+    @objc func handleShowOnboarding() {
+        // Close settings window
+        settingsWindow?.orderOut(nil)
+        settingsWindow = nil
+        if let monitor = clickOutsideMonitor {
+            NSEvent.removeMonitor(monitor)
+            clickOutsideMonitor = nil
+        }
+
+        // Hide main widget
+        window?.orderOut(nil)
+
+        // Show onboarding
+        NSApp.setActivationPolicy(.regular)
+        showOnboarding()
     }
 }

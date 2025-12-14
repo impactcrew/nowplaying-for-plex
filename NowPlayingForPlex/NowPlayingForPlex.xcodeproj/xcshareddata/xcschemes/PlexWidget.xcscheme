@@ -18,7 +18,7 @@
                BlueprintIdentifier = "A1000022000000000000001"
                BuildableName = "PlexWidget.app"
                BlueprintName = "PlexWidget"
-               ReferencedContainer = "container:PlexWidget.xcodeproj">
+               ReferencedContainer = "container:NowPlayingForPlex.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "A1000022000000000000001"
             BuildableName = "PlexWidget.app"
             BlueprintName = "PlexWidget"
-            ReferencedContainer = "container:PlexWidget.xcodeproj">
+            ReferencedContainer = "container:NowPlayingForPlex.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -64,7 +64,7 @@
             BlueprintIdentifier = "A1000022000000000000001"
             BuildableName = "PlexWidget.app"
             BlueprintName = "PlexWidget"
-            ReferencedContainer = "container:PlexWidget.xcodeproj">
+            ReferencedContainer = "container:NowPlayingForPlex.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

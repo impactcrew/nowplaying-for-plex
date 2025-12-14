@@ -5,7 +5,8 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_NAME="PlexWidget"
+PROJECT_NAME="NowPlayingForPlex"
+TARGET_NAME="PlexWidget"
 SCHEME="PlexWidget"
 CONFIGURATION="Release"
 BUILD_DIR="$PROJECT_DIR/build"
@@ -48,7 +49,7 @@ xcodebuild \
 echo ""
 echo "Creating universal binary..."
 
-APP_NAME="$PROJECT_NAME.app"
+APP_NAME="$TARGET_NAME.app"
 X86_APP="$BUILD_DIR/DerivedData-x86_64/Build/Products/$CONFIGURATION/$APP_NAME"
 ARM_APP="$BUILD_DIR/DerivedData-arm64/Build/Products/$CONFIGURATION/$APP_NAME"
 UNIVERSAL_APP="$BUILD_DIR/$OUTPUT_APP_NAME"
@@ -56,8 +57,8 @@ UNIVERSAL_APP="$BUILD_DIR/$OUTPUT_APP_NAME"
 # Copy one architecture as base
 cp -R "$ARM_APP" "$UNIVERSAL_APP"
 
-# Find the executable
-EXECUTABLE_PATH="Contents/MacOS/$PROJECT_NAME"
+# Find the executable and rename it to match the app name
+EXECUTABLE_PATH="Contents/MacOS/$TARGET_NAME"
 
 # Create universal binary
 lipo -create \
@@ -69,7 +70,7 @@ lipo -create \
 # This is CRITICAL for network access when hardened runtime is enabled
 echo ""
 echo "Code signing universal binary..."
-codesign -s - --deep --force --entitlements "$PROJECT_DIR/PlexWidget/PlexWidget.entitlements" "$UNIVERSAL_APP" 2>&1 | grep -v "^Warning" || true
+codesign -s - --deep --force --entitlements "$PROJECT_DIR/NowPlayingForPlex/NowPlayingForPlex.entitlements" "$UNIVERSAL_APP" 2>&1 | grep -v "^Warning" || true
 
 # Verify the signature
 echo ""

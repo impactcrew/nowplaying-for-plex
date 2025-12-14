@@ -3,10 +3,73 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: WidgetSettings
     @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
+    @State private var isServerReachable: Bool = true
+    @State private var showResetConfirmation: Bool = false
+
+    private var serverUrl: String {
+        ConfigManager.shared.getServerUrl() ?? "Not configured"
+    }
+
+    private var displayUrl: String {
+        // Strip http:// or https:// and show just host:port
+        var url = serverUrl
+        if url.hasPrefix("http://") {
+            url = String(url.dropFirst(7))
+        } else if url.hasPrefix("https://") {
+            url = String(url.dropFirst(8))
+        }
+        // Remove trailing slash if present
+        if url.hasSuffix("/") {
+            url = String(url.dropLast())
+        }
+        return url
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 24) {
+                // Server Status
+                HStack {
+                    Circle()
+                        .fill(isServerReachable ?
+                            Color(red: 40/255, green: 200/255, blue: 120/255) :
+                            Color(red: 255/255, green: 80/255, blue: 150/255))
+                        .frame(width: 8, height: 8)
+
+                    Text(displayUrl)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+
+                    Spacer()
+
+                    Button(action: {
+                        showResetConfirmation = true
+                    }) {
+                        Text("Reset")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Reset", role: .destructive) {
+                        ConfigManager.shared.clearConfig()
+                        NotificationCenter.default.post(name: NSNotification.Name("ShowOnboarding"), object: nil)
+                    }
+                } message: {
+                    Text("This will clear your server settings and show the setup screen.")
+                }
+
+                // Divider
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 1)
+
                 // Theme
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Theme")
@@ -150,7 +213,30 @@ struct SettingsView: View {
         .frame(width: 280)
         .onAppear {
             launchAtLogin.checkStatus()
+            checkServerReachability()
         }
+    }
+
+    private func checkServerReachability() {
+        guard let config = ConfigManager.shared.loadConfig(),
+              let url = URL(string: "\(config.plexServerUrl)/status/sessions") else {
+            isServerReachable = false
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue(config.plexToken, forHTTPHeaderField: "X-Plex-Token")
+        request.timeoutInterval = 5
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            DispatchQueue.main.async {
+                if let httpResponse = response as? HTTPURLResponse {
+                    isServerReachable = (200...299).contains(httpResponse.statusCode)
+                } else {
+                    isServerReachable = false
+                }
+            }
+        }.resume()
     }
 }
 

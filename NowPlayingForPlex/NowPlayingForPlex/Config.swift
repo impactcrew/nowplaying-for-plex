@@ -57,6 +57,21 @@ class ConfigManager {
         #endif
     }
 
+    func clearConfig() {
+        // Clear UserDefaults
+        UserDefaults.standard.removeObject(forKey: serverUrlKey)
+        #if DEBUG
+        UserDefaults.standard.removeObject(forKey: "plex-token-debug")
+        #endif
+
+        // Clear Keychain
+        deleteTokenFromKeychain()
+    }
+
+    func getServerUrl() -> String? {
+        return loadServerUrlFromUserDefaults()
+    }
+
     // MARK: - Keychain Operations
 
     private func saveTokenToKeychain(_ token: String) -> Bool {
