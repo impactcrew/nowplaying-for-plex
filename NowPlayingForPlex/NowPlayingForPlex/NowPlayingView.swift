@@ -34,25 +34,29 @@ struct NowPlayingView: View {
     }
 
     var shadowColors: [(Color, CGFloat, CGFloat, CGFloat)] {
+        let isMini = settings.layoutStyle == .mini
         if isDarkMode {
             return [
-                (Color.black.opacity(0.4), 15, 0, 5),
-                (Color.black.opacity(0.3), 6, 0, 2)
+                (Color.black.opacity(isMini ? 0.3 : 0.4), isMini ? 2 : 15, 0, isMini ? 1 : 5),
+                (Color.black.opacity(isMini ? 0.2 : 0.3), isMini ? 1 : 6, 0, isMini ? 0 : 2)
             ]
         } else {
             return [
-                (Color.black.opacity(0.15), 15, 0, 5),
-                (Color.black.opacity(0.1), 6, 0, 2)
+                (Color.black.opacity(isMini ? 0.1 : 0.15), isMini ? 2 : 15, 0, isMini ? 1 : 5),
+                (Color.black.opacity(isMini ? 0.05 : 0.1), isMini ? 1 : 6, 0, isMini ? 0 : 2)
             ]
         }
     }
 
     var body: some View {
         Group {
-            if settings.layoutStyle == .side {
+            switch settings.layoutStyle {
+            case .side:
                 sideLayout
-            } else {
+            case .overlay:
                 overlayLayout
+            case .mini:
+                miniLayout
             }
         }
         .onAppear {
@@ -72,6 +76,7 @@ struct NowPlayingView: View {
             // Album art positioned absolutely
             AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
                 .frame(width: 190, height: 190)
+                .clipped()  // Ensure content doesn't overflow
                 .clipShape(settings.albumArtShape == .circular ?
                     AnyShape(Circle()) :
                     AnyShape(RoundedRectangle(cornerRadius: 20)))
@@ -195,24 +200,17 @@ struct NowPlayingView: View {
     var sideLayout: some View {
         HStack(spacing: 0) {
             // Album art on the left - 140px (square to match height)
-            ZStack {
-                Color.black.opacity(0.3)
-                AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
-            }
-            .frame(width: 140, height: 140)
-            .clipShape(settings.albumArtShape == .circular ?
-                AnyShape(UnevenRoundedRectangle(cornerRadii: .init(
-                    topLeading: 28,
-                    bottomLeading: 28,
-                    bottomTrailing: 20,
-                    topTrailing: 20
-                ))) :
-                AnyShape(UnevenRoundedRectangle(cornerRadii: .init(
-                    topLeading: 28,
-                    bottomLeading: 28,
-                    bottomTrailing: 0,
-                    topTrailing: 0
-                ))))
+            AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
+                .frame(width: 140, height: 140)
+                .clipped()
+                .clipShape(
+                    UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: 28,
+                        bottomLeading: 28,
+                        bottomTrailing: settings.albumArtShape == .circular ? 20 : 4,
+                        topTrailing: settings.albumArtShape == .circular ? 20 : 4
+                    ))
+                )
 
             // Content area - 260px width, padding: 20px 16px 12px 16px
             VStack(alignment: .leading, spacing: 8) {
@@ -314,6 +312,97 @@ struct NowPlayingView: View {
                 .overlay(backgroundColor)
         )
         .clipShape(RoundedRectangle(cornerRadius: 28))
+        .compositingGroup()
+        .applyConditionalShadows(
+            baseShadows: shadowColors,
+            glowEnabled: settings.blueGlowEnabled,
+            glowColour: settings.glowColour
+        )
+    }
+
+    var miniLayout: some View {
+        HStack(spacing: 0) {
+            // Compact album art - 70px
+            AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
+                .frame(width: 70, height: 70)
+                .clipped()  // Ensure content doesn't overflow
+                .clipShape(settings.albumArtShape == .circular ?
+                    AnyShape(UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: 16,
+                        bottomLeading: 16,
+                        bottomTrailing: 12,
+                        topTrailing: 12
+                    ))) :
+                    AnyShape(UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: 16,
+                        bottomLeading: 16,
+                        bottomTrailing: 0,
+                        topTrailing: 0
+                    ))))
+
+            // Compact content area
+            VStack(alignment: .leading, spacing: 4) {
+                // Track info - tighter spacing
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(nowPlaying.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(titleColor)
+                        .lineLimit(1)
+
+                    Text("\(nowPlaying.artist) — \(nowPlaying.album)")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(subtitleColor)
+                        .lineLimit(1)
+                }
+
+                // Compact progress bar
+                VStack(spacing: 1) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color(hex: "e5e5e5"))
+                                .frame(height: 4)
+
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(hex: "ffcb7d"),
+                                            Color(hex: "ff920c")
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * progress, height: 4)
+                        }
+                    }
+                    .frame(height: 4)
+
+                    // Time codes - smaller
+                    HStack {
+                        Text(formatTime(displayTime))
+                            .font(.system(size: 10, weight: .regular))
+                            .foregroundColor(subtitleColor)
+
+                        Spacer()
+
+                        Text(formatTime(nowPlaying.duration))
+                            .font(.system(size: 10, weight: .regular))
+                            .foregroundColor(subtitleColor)
+                    }
+                }
+            }
+            .frame(width: 220)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+        }
+        .frame(height: 70)
+        .background(
+            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+                .overlay(backgroundColor)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .compositingGroup()
         .applyConditionalShadows(
             baseShadows: shadowColors,

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @main
 struct PlexWidgetApp: App {
@@ -30,6 +31,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var settings = WidgetSettings.shared
     var clickOutsideMonitor: Any?
     var cachedConfig: PlexConfig? // Cache config to avoid multiple Keychain accesses
+    private var layoutObserver: AnyCancellable?
+    private var currentLayout: LayoutStyle = .side
 
     // Keys for saving window position
     private let windowPositionXKey = "windowPositionX"
@@ -165,11 +168,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     func showMainWidget() {
-        // Create the floating window
-        // Card width: 477px + 75px for album art sticking out left = 552px total + 40px padding
+        // Window dimensions based on layout style
+        let (windowWidth, windowHeight) = windowSizeForLayout(settings.layoutStyle)
         let screenWidth = NSScreen.main?.frame.width ?? 1920
-        let windowWidth: CGFloat = 592  // 552 + 40 for padding
-        let windowHeight: CGFloat = 232  // 192 + 40 for padding
 
         // Restore saved position or use default (bottom-right corner)
         let xPosition: CGFloat
@@ -212,6 +213,42 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSWindow.didMoveNotification,
             object: window
         )
+
+        // Track current layout
+        currentLayout = settings.layoutStyle
+
+        // Observe layout style changes to resize window
+        layoutObserver = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                let newLayout = self.settings.layoutStyle
+                if newLayout != self.currentLayout {
+                    self.currentLayout = newLayout
+                    self.resizeWindowForLayout(newLayout)
+                }
+            }
+    }
+
+    private func windowSizeForLayout(_ layout: LayoutStyle) -> (CGFloat, CGFloat) {
+        switch layout {
+        case .side, .overlay:
+            return (592, 232)  // 552 + 40 padding
+        case .mini:
+            return (320, 100)  // 290 + 30 padding, 70 + 30 padding
+        }
+    }
+
+    private func resizeWindowForLayout(_ layout: LayoutStyle) {
+        guard let window = window else { return }
+        let (newWidth, newHeight) = windowSizeForLayout(layout)
+        let currentFrame = window.frame
+
+        // Keep the same top-right corner position when resizing
+        let newX = currentFrame.maxX - newWidth
+        let newY = currentFrame.minY
+
+        let newFrame = NSRect(x: newX, y: newY, width: newWidth, height: newHeight)
+        window.setFrame(newFrame, display: true, animate: true)
     }
 
     @objc func windowDidMove(_ notification: Notification) {
@@ -243,7 +280,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let buttonFrame = button.window?.convertToScreen(button.frame) ?? .zero
         let settingsWidth: CGFloat = 280
-        let settingsHeight: CGFloat = 350
+        let settingsHeight: CGFloat = 420
 
         // Position below menu bar icon - left-aligned with no gap
         let xPosition = buttonFrame.minX

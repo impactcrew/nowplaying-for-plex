@@ -47,7 +47,7 @@ struct SettingsView: View {
                         .foregroundColor(.white.opacity(0.85))
 
                     SegmentedControl(
-                        options: [LayoutStyle.side, LayoutStyle.overlay],
+                        options: [LayoutStyle.side, LayoutStyle.overlay, LayoutStyle.mini],
                         selection: $settings.layoutStyle
                     )
                 }

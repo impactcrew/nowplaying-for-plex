@@ -9,6 +9,7 @@ enum Theme: String, CaseIterable {
 enum LayoutStyle: String, CaseIterable {
     case side = "Side"
     case overlay = "Overlay"
+    case mini = "Mini"
 }
 
 enum AlbumArtShape: String, CaseIterable {
@@ -111,6 +112,7 @@ extension LayoutStyle: RawRepresentable {
         switch rawValue {
         case "Side": self = .side
         case "Overlay": self = .overlay
+        case "Mini": self = .mini
         default: return nil
         }
     }

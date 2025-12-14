@@ -42,6 +42,34 @@ struct ContentView: View {
         )
     }
 
+    // Dynamic frame sizing based on layout style
+    var contentWidth: CGFloat {
+        switch settings.layoutStyle {
+        case .side, .overlay:
+            return 552
+        case .mini:
+            return 290  // 70 album art + 220 content
+        }
+    }
+
+    var contentHeight: CGFloat {
+        switch settings.layoutStyle {
+        case .side, .overlay:
+            return 192
+        case .mini:
+            return 70
+        }
+    }
+
+    var contentPadding: CGFloat {
+        switch settings.layoutStyle {
+        case .side, .overlay:
+            return 20
+        case .mini:
+            return 15  // Increased from 10 to provide more room for shadows
+        }
+    }
+
     var body: some View {
         Group {
             if plexAPI.isLoading && !wasPlaying {
@@ -65,8 +93,9 @@ struct ContentView: View {
                 NotPlayingView()
             }
         }
-        .frame(width: 552, height: 192)
-        .padding(20)
+        .frame(width: contentWidth, height: contentHeight)
+        .padding(contentPadding)
+        .background(Color.clear)
         .onAppear {
             plexAPI.startUpdating(interval: 2.0)
         }
