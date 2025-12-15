@@ -112,15 +112,10 @@ struct SettingsView: View {
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(10)
 
-                // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(height: 1)
-
-                // Server Status + Quit (combined section)
+                // Server Status + Quit
                 HStack(alignment: .top) {
                     // Left side: Server info
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Circle()
                                 .fill(isServerReachable ?
@@ -141,6 +136,7 @@ struct SettingsView: View {
                                 .foregroundColor(.white.opacity(0.5))
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, 14)
                     }
                     .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
                         Button("Cancel", role: .cancel) { }
@@ -249,7 +245,7 @@ struct SegmentedControl<T: RawRepresentable & Equatable>: View where T.RawValue 
                         .foregroundColor(selection == option ? .black : .white.opacity(0.9))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 10)
                         .background(
                             Group {
                                 if selection == option {

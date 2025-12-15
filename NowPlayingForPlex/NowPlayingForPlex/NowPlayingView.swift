@@ -10,6 +10,8 @@ struct NowPlayingView: View {
     @State private var timer: Timer?
     @State private var titleOffset: CGFloat = 0
     @State private var shouldScrollTitle = false
+    @State private var subtitleOffset: CGFloat = 0
+    @State private var shouldScrollSubtitle = false
 
     var progress: Double {
         guard nowPlaying.duration > 0 else { return 0 }
@@ -344,15 +346,69 @@ struct NowPlayingView: View {
             VStack(alignment: .leading, spacing: 4) {
                 // Track info - tighter spacing
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(nowPlaying.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(titleColor)
-                        .lineLimit(1)
+                    // Scrolling title for mini mode
+                    GeometryReader { geo in
+                        HStack(spacing: 30) {
+                            if shouldScrollTitle {
+                                Text(nowPlaying.title)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(titleColor)
+                                    .fixedSize()
+                                Text(nowPlaying.title)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(titleColor)
+                                    .fixedSize()
+                            } else {
+                                Text(nowPlaying.title)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(titleColor)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .offset(x: shouldScrollTitle ? titleOffset : 0)
+                        .onAppear {
+                            let textWidth = (nowPlaying.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 14, weight: .semibold)]).width
+                            if textWidth > geo.size.width {
+                                shouldScrollTitle = true
+                                startScrolling(textWidth: textWidth, containerWidth: geo.size.width)
+                            }
+                        }
+                    }
+                    .frame(height: 17)
+                    .clipped()
 
-                    Text("\(nowPlaying.artist) — \(nowPlaying.album)")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(subtitleColor)
-                        .lineLimit(1)
+                    // Scrolling artist/album for mini mode
+                    GeometryReader { geo in
+                        let subtitleText = "\(nowPlaying.artist) — \(nowPlaying.album)"
+
+                        HStack(spacing: 30) {
+                            if shouldScrollSubtitle {
+                                Text(subtitleText)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(subtitleColor)
+                                    .fixedSize()
+                                Text(subtitleText)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(subtitleColor)
+                                    .fixedSize()
+                            } else {
+                                Text(subtitleText)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(subtitleColor)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .offset(x: shouldScrollSubtitle ? subtitleOffset : 0)
+                        .onAppear {
+                            let textWidth = (subtitleText as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 11, weight: .regular)]).width
+                            if textWidth > geo.size.width {
+                                shouldScrollSubtitle = true
+                                startSubtitleScrolling(textWidth: textWidth, containerWidth: geo.size.width)
+                            }
+                        }
+                    }
+                    .frame(height: 14)
+                    .clipped()
                 }
 
                 // Compact progress bar
@@ -438,6 +494,18 @@ struct NowPlayingView: View {
             titleOffset = -scrollDistance
         }
     }
+
+    private func startSubtitleScrolling(textWidth: CGFloat, containerWidth: CGFloat) {
+        // Gap of 30px is defined in HStack spacing
+        let scrollDistance = textWidth + 30
+
+        withAnimation(
+            Animation.linear(duration: Double(scrollDistance) / 40.0)
+                .repeatForever(autoreverses: false)
+        ) {
+            subtitleOffset = -scrollDistance
+        }
+    }
 }
 
 struct AlbumArtView: View {
@@ -446,56 +514,62 @@ struct AlbumArtView: View {
     @ObservedObject var plexAPI: PlexAPI
 
     var body: some View {
-        Group {
-            if let image = image {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                // Vinyl placeholder with gradient
-                ZStack {
-                    Color(hex: "2a2a2a")
+        GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+            let scale = size / 140  // Base size is 140
 
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [
-                                    Color(hex: "ffcb7d"),
-                                    Color(hex: "ff920c")
-                                ]),
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 80
-                            )
-                        )
-                        .frame(width: 120, height: 120)
-                        .overlay(
-                            Circle()
-                                .stroke(Color(hex: "444444"), lineWidth: 1)
-                        )
+            Group {
+                if let image = image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    // Vinyl placeholder with gradient - scales to container
+                    ZStack {
+                        Color(hex: "2a2a2a")
 
-                    // Vinyl grooves
-                    ForEach([50, 38, 26], id: \.self) { radius in
                         Circle()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                            .frame(width: CGFloat(radius * 2), height: CGFloat(radius * 2))
-                    }
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(hex: "ffcb7d"),
+                                        Color(hex: "ff920c")
+                                    ]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 80 * scale
+                                )
+                            )
+                            .frame(width: 120 * scale, height: 120 * scale)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: "444444"), lineWidth: 1)
+                            )
 
-                    // Center label
-                    Circle()
-                        .fill(Color(hex: "444444"))
-                        .frame(width: 26, height: 26)
-                        .overlay(
+                        // Vinyl grooves
+                        ForEach([50, 38, 26], id: \.self) { radius in
                             Circle()
-                                .stroke(Color(hex: "555555"), lineWidth: 1)
-                        )
+                                .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                                .frame(width: CGFloat(radius) * 2 * scale, height: CGFloat(radius) * 2 * scale)
+                        }
 
-                    // Center hole
-                    Circle()
-                        .fill(Color(hex: "2a2a2a"))
-                        .frame(width: 8, height: 8)
+                        // Center label
+                        Circle()
+                            .fill(Color(hex: "444444"))
+                            .frame(width: 26 * scale, height: 26 * scale)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: "555555"), lineWidth: 1)
+                            )
+
+                        // Center hole
+                        Circle()
+                            .fill(Color(hex: "2a2a2a"))
+                            .frame(width: 8 * scale, height: 8 * scale)
+                    }
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .onAppear {
             loadImage()
