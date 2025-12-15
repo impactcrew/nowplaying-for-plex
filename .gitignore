@@ -1,16 +1,20 @@
 # macOS
 .DS_Store
+*.DS_Store
 
-# Node.js (if used for tooling)
-node_modules/
+# Build output
+build/
+*/build/
+DerivedData/
+*/DerivedData*/
 
-# Xcode
-PlexWidget/build/
-PlexWidget/PlexWidget.xcodeproj/xcuserdata/
-PlexWidget/PlexWidget.xcodeproj/project.xcworkspace/xcuserdata/
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad
+*.xcbkptlist
 *.xcscmblueprint
 *.xccheckout
-DerivedData/
 *.moved-aside
 *.pbxuser
 !default.pbxuser
@@ -21,5 +25,27 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
-# Temporary files
+# Node.js
+node_modules/
+package-lock.json
+
+# Binary releases (use GitHub Releases instead)
+*.dmg
+*.pkg
+*.zip
+
+# Internal development docs
+docs/
+.design-assets/
+
+# Temporary and log files
 *.log
+*.tmp
+*.temp
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
