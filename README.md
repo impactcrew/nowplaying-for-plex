@@ -26,6 +26,7 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 
 ## Features
 
+- **NEW: Mini mode** - Mini widget for those who want something compact
 - **Menu Bar Integration** - Menu bar icon with Plex chevron for quick access to settings
 - **Beautiful Album Art** - Displays high-quality album artwork with customizable shapes (square, rounded, circle)
 - **Smooth Track Transitions** - Album art persists during track changes for seamless playback experience
@@ -216,7 +217,7 @@ NowPlaying for Plex cannot add play/pause/skip buttons due to fundamental limita
 
 ## Upcoming Development
 
-- Mini mode for smaller screens
+- App store version
 - Windows version
 
 ## License
