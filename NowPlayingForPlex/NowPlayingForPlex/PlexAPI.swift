@@ -79,17 +79,32 @@ class PlexAPI: ObservableObject {
         self.clientIdentifier = "plex-desktop-widget-\(Date().timeIntervalSince1970)"
     }
 
-    func startUpdating(interval: TimeInterval = 2.0) {
+    func startUpdating(interval: TimeInterval = 5.0) {
         // Initial fetch
         Task { @MainActor in
             await fetchNowPlaying()
         }
 
-        // Start timer for periodic updates - ensure it runs on main thread
-        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        // Start timer for periodic updates with adaptive polling
+        scheduleNextUpdate(baseInterval: interval)
+    }
+
+    private func scheduleNextUpdate(baseInterval: TimeInterval) {
+        updateTimer?.invalidate()
+
+        // Adaptive polling: slower when paused/stopped
+        let interval: TimeInterval
+        if let state = nowPlaying?.state.lowercased() {
+            interval = (state == "playing") ? baseInterval : baseInterval * 2.0
+        } else {
+            interval = baseInterval
+        }
+
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             guard let self = self else { return }
             Task { @MainActor in
                 await self.fetchNowPlaying()
+                self.scheduleNextUpdate(baseInterval: baseInterval)
             }
         }
     }

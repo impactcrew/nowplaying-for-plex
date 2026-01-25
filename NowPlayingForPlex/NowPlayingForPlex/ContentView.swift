@@ -97,7 +97,7 @@ struct ContentView: View {
         .padding(contentPadding)
         .background(Color.clear)
         .onAppear {
-            plexAPI.startUpdating(interval: 2.0)
+            plexAPI.startUpdating() // Uses default 5s interval with adaptive polling
         }
         .onDisappear {
             plexAPI.stopUpdating()
@@ -137,6 +137,11 @@ struct LoadingView: View {
                             .repeatForever(autoreverses: false)
                     ) {
                         rotation = 360
+                    }
+                }
+                .onDisappear {
+                    withAnimation(.linear(duration: 0)) {
+                        rotation = 0
                     }
                 }
 

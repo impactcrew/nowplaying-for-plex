@@ -12,6 +12,8 @@ struct NowPlayingView: View {
     @State private var shouldScrollTitle = false
     @State private var subtitleOffset: CGFloat = 0
     @State private var shouldScrollSubtitle = false
+    @State private var titleScrollTask: Task<Void, Never>?
+    @State private var subtitleScrollTask: Task<Void, Never>?
 
     var progress: Double {
         guard nowPlaying.duration > 0 else { return 0 }
@@ -68,8 +70,18 @@ struct NowPlayingView: View {
         .onChange(of: nowPlaying.viewOffset) { newValue in
             displayTime = newValue
         }
+        .onChange(of: nowPlaying.state) { newState in
+            if newState == "playing" {
+                startTimer()
+            } else {
+                timer?.invalidate()
+                timer = nil
+            }
+        }
         .onDisappear {
             timer?.invalidate()
+            titleScrollTask?.cancel()
+            subtitleScrollTask?.cancel()
         }
     }
 
@@ -470,7 +482,8 @@ struct NowPlayingView: View {
     private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if displayTime < nowPlaying.duration {
+            // Only update progress when actually playing
+            if nowPlaying.state == "playing" && displayTime < nowPlaying.duration {
                 displayTime += 1000
             }
         }
@@ -486,24 +499,82 @@ struct NowPlayingView: View {
     private func startScrolling(textWidth: CGFloat, containerWidth: CGFloat) {
         // Gap of 30px is defined in HStack spacing
         let scrollDistance = textWidth + 30
+        let scrollDuration = Double(scrollDistance) / 50.0
 
-        withAnimation(
-            Animation.linear(duration: Double(scrollDistance) / 50.0)
-                .repeatForever(autoreverses: false)
-        ) {
-            titleOffset = -scrollDistance
+        // Cancel any existing scroll task
+        titleScrollTask?.cancel()
+
+        // Start discrete animation cycle
+        titleScrollTask = Task {
+            while !Task.isCancelled {
+                // Check if paused - if so, sleep and continue without animating
+                guard nowPlaying.state == "playing" else {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    continue
+                }
+
+                // Reset to start position (no animation)
+                titleOffset = 0
+
+                // Wait 1 second before starting scroll
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if Task.isCancelled { break }
+
+                // Animate scroll to end
+                await MainActor.run {
+                    withAnimation(.linear(duration: scrollDuration)) {
+                        titleOffset = -scrollDistance
+                    }
+                }
+
+                // Wait for animation to complete
+                try? await Task.sleep(nanoseconds: UInt64(scrollDuration * 1_000_000_000))
+                if Task.isCancelled { break }
+
+                // Pause at end position for 2 seconds
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
         }
     }
 
     private func startSubtitleScrolling(textWidth: CGFloat, containerWidth: CGFloat) {
         // Gap of 30px is defined in HStack spacing
         let scrollDistance = textWidth + 30
+        let scrollDuration = Double(scrollDistance) / 40.0
 
-        withAnimation(
-            Animation.linear(duration: Double(scrollDistance) / 40.0)
-                .repeatForever(autoreverses: false)
-        ) {
-            subtitleOffset = -scrollDistance
+        // Cancel any existing scroll task
+        subtitleScrollTask?.cancel()
+
+        // Start discrete animation cycle
+        subtitleScrollTask = Task {
+            while !Task.isCancelled {
+                // Check if paused - if so, sleep and continue without animating
+                guard nowPlaying.state == "playing" else {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    continue
+                }
+
+                // Reset to start position (no animation)
+                subtitleOffset = 0
+
+                // Wait 1 second before starting scroll
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if Task.isCancelled { break }
+
+                // Animate scroll to end
+                await MainActor.run {
+                    withAnimation(.linear(duration: scrollDuration)) {
+                        subtitleOffset = -scrollDistance
+                    }
+                }
+
+                // Wait for animation to complete
+                try? await Task.sleep(nanoseconds: UInt64(scrollDuration * 1_000_000_000))
+                if Task.isCancelled { break }
+
+                // Pause at end position for 2 seconds
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
         }
     }
 }

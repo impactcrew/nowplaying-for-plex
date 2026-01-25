@@ -3,7 +3,7 @@
 
   # NowPlaying for Plex
 
-  ![Version](https://img.shields.io/badge/version-1.0-blue.svg)
+  ![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
   ![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
   ![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)
   ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -189,6 +189,12 @@ This app:
 - Does not require internet access beyond your Plex server
 
 ## Recent Updates
+
+- **v1.3.0** - Major CPU optimization: reduced CPU usage during playback from 6% to under 0.5%
+  - Replaced infinite scroll animations with discrete animation cycles
+  - Implemented adaptive API polling (5s playing, 10s paused)
+  - Timer stops completely when playback paused
+  - Fixed LoadingView animation cleanup
 
 - **v1.0.0 Release** - Fixed critical onboarding crash, added local network support
 - **Improved threading** - Resolved @MainActor threading issues with network I/O
