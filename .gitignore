@@ -50,3 +50,7 @@ docs/
 *.swo
 *~
 .claude-context/
+
+# OSS Dev Workflow (auto-added)
+.oss/*
+!.oss/dev/
