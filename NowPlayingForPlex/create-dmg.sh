@@ -33,11 +33,11 @@ ln -s /Applications "$DMG_DIR/Applications"
 # Create mid grey to white gradient background
 echo "Creating mid grey to white gradient background..."
 
-# Create a smooth diagonal gradient from mid grey to white
-# Mid Grey #808080 (top-left) → White #FFFFFF (bottom-right)
+# Create a smooth diagonal gradient from yellow to white
+# Yellow #FFD700 (top-left) → White #FFFFFF (bottom-right)
 convert -size 600x400 xc: \
     -sparse-color Barycentric \
-    "0,0 #808080  600,400 #FFFFFF" \
+    "0,0 #FFD700  600,400 #FFFFFF" \
     dmg_background.png
 echo "✓ Gradient created"
 
