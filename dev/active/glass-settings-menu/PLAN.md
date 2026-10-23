@@ -1,17 +1,17 @@
-# Native glass settings menu
+# Dark translucent settings menu
 
-## Approved direction
+## Final scope
 
-The user approved one native glass settings panel, familiar controls and layout, and restrained orange selection highlights. Implement this direction without another approval gate.
+Restore the original dark menu character with a more transparent background and keep Change Server directly beneath the server address. The user rejected the pale native glass presentation and explicitly requested this correction.
 
-## Work
+## Implementation
 
-Obtain the native design specification, then update the menu presentation using system Liquid Glass on macOS 26 and later. Retain the existing masked material on supported older systems because the project targets macOS 13. Use readable semantic foreground colors and quieter control backgrounds. Preserve all settings bindings, actions, and the fixed player window border.
+Use the masked native HUD blur with a 60 percent charcoal overlay instead of the original 85 percent. Force dark appearance for this menu and retain semantic foreground colors. Restore orange selection gradients and remove the added minimum-height Change Server frame. Retain accessibility improvements, the standard launch switch, settings bindings, and the widget border fix.
 
 ## Verification
 
-Use the installed Xcode 27.1 for a Release build. Review the code and security implications. Verify the installed app signature and executable, back up the previous build, and restart the app. Check available programmatic rendering and accessibility behavior; record visual checks that cannot be performed with available tools. Do not publish or push.
+Release arm64 build passed with Xcode 27.1. Code and security reviews reported no findings. The installed app signature passed verification and its executable SHA-256 matches the build. The app was backed up and restarted successfully. Desktop-control tools are unavailable, so final visual confirmation remains pending. No publication or push.
 
-## Status
+## Project preference
 
-Implemented and installed. Release arm64 build passed with Xcode 27.1; the existing unrelated AnyShape Sendable warning remains. Code and security reviews reported no findings. Installation backed up the previous app, verified the installed code signature and matching executable SHA-256, and relaunched successfully. Desktop-control tools are unavailable, so visual verification of light/dark contrast, glass corners, expanded Glow Colour layout, and accessibility appearances remains pending. No AppDelegate sizing change was made: hosting view sizing constraints already update window bounds, and a clipping fault was not demonstrated. Native implementation resides in SettingsView.swift. No publication or push.
+The menu stays dark and translucent independently of system appearance. Preserve the original close spacing between the server address and Change Server.
