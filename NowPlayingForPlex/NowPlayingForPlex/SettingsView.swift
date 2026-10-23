@@ -6,6 +6,21 @@ struct SettingsView: View {
     @State private var isServerReachable: Bool = true
     @State private var showResetConfirmation: Bool = false
 
+    // Mask the native material as well as its SwiftUI background.
+    private static let backgroundMask: NSImage = {
+        let radius: CGFloat = 20
+        let size = NSSize(width: radius * 2 + 1, height: radius * 2 + 1)
+        let image = NSImage(size: size, flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            NSBezierPath(rect: NSRect(x: 0, y: radius, width: rect.width, height: rect.height - radius)).fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        image.resizingMode = .stretch
+        return image
+    }()
+
     private var serverUrl: String {
         ConfigManager.shared.getServerUrl() ?? "Not configured"
     }
@@ -172,7 +187,7 @@ struct SettingsView: View {
             .padding(24)
             .background(
                 ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow, maskImage: Self.backgroundMask)
                     Color(red: 13/255, green: 13/255, blue: 13/255).opacity(0.85)
                 }
                 .clipShape(
