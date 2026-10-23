@@ -1,0 +1,21 @@
+# Glass settings menu
+
+- Stance: Control Center beside the album sleeve. A quiet, legible control panel; the music remains the visual focus.
+- Approved scope: one native regular-glass panel, familiar controls and ordering, restrained Plex orange selection, softer separators. No additional approval gate.
+- Existing tokens: 280 pt panel width, 24 pt inset and section spacing, 10 pt label-to-control spacing, SF Pro 13 pt medium labels and 11 pt secondary descriptions; retain these proportions and sentence case.
+- Native reference: Apple Materials HIG, specifically regular Liquid Glass for text-heavy popovers. Quote: "Use Liquid Glass effects sparingly." https://developer.apple.com/design/human-interface-guidelines/materials
+- Taste-library reference: approved Resizr app darkroom, controls recede so the media remains prominent. Reuse its restraint only; preserve this app's existing typography and orange identity. Source: /Users/lemon/Development/design-agent/creations/resizr-app-darkroom.md
+- Background role: clear, nonopaque hosting window; let native material respond to desktop and system appearance.
+- Surface role: a single regular Liquid Glass surface on macOS 26+, without the old opaque charcoal scrim or stacked decorative shadows; standard native popover material on macOS 13-25.
+- Text roles: semantic primary foreground for labels and options; semantic secondary foreground for explanatory text and server actions. Do not use fixed white with reduced opacity over adaptive glass.
+- Primary action role: settings apply immediately; selected options and enabled launch switch carry the existing Plex orange, #E5A00D, as state feedback. Neutral Quit and Change Server actions stay secondary.
+- Accent role: the same orange, used only for active states, never tinted across the whole glass panel. No additional precious flourish color; do not invent decoration in a utility menu.
+- Control surface role: subtle semantic neutral fills behind grouped options, quieter unselected segments, flat selected orange fill instead of the existing orange gradient. Preserve existing color swatches because they represent user-selectable glow colors.
+- Shape: preserve square upper corners against the menu bar and 20 pt lower corners. Use the same shape for native glass, fallback material mask, clipping and any outline. Interior controls retain their existing nested 8/10 pt geometry.
+- Separators: semantic separator color or native Divider; no repeated card borders or extra hairline around the glass when the native material already supplies an edge.
+- Interaction: maintain existing behavior and row order. Keyboard and VoiceOver must identify selected segments, color names and switch state; minimum practical macOS control target 28 pt.
+- Accessibility: Reduce Transparency replaces custom glass with an opaque semantic window background inside the identical shape. Retain visible controls and selected-state cues; Increase Contrast must preserve separator and text legibility. Disable nonessential animation under Reduce Motion.
+- Geometry: retain the current menu-bar anchor and native hosting size constraints. Review confirmed that hosting sizing options update window content bounds; the seeded 420 pt height alone does not prove clipping. The settings root uses its fitted vertical size.
+- Verification: inspect on light and dark desktops, with glow colors shown/hidden, Reduce Transparency and Increase Contrast enabled, and all lower corners at display scale. Compare selected/unselected readability and ensure the hosting window remains clear outside the shape.
+- Implementation API reference: native glass effect is availability-gated at macOS 26; retain macOS 13 deployment support. https://developer.apple.com/documentation/swiftui/view/glasseffect(_:in:)
+- Accessibility reference: https://developer.apple.com/design/human-interface-guidelines/accessibility
