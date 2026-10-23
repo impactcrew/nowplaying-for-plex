@@ -368,14 +368,38 @@ struct ColourPicker: View {
 
 // MARK: - Plex Toggle Switch
 struct PlexToggle: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOn: Bool
 
     var body: some View {
-        Toggle("Launch at login", isOn: $isOn)
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .tint(SettingsAppearance.accent)
-            .frame(minWidth: 40, minHeight: 28)
+        Button {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                isOn.toggle()
+            }
+        } label: {
+            ZStack(alignment: isOn ? .trailing : .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.3))
+                    .overlay {
+                        if isOn {
+                            Capsule().fill(SettingsAppearance.selectionFill)
+                        }
+                    }
+
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 20, height: 20)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    .padding(2)
+            }
+            .frame(width: 40, height: 24)
+            .frame(minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle("Launch at login", isOn: $isOn)
+        }
     }
 }
 
