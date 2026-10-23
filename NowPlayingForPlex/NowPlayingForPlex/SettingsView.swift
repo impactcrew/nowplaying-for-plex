@@ -163,7 +163,6 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .frame(minHeight: 28, alignment: .leading)
                         .padding(.leading, 14)
                     }
                     .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
@@ -202,6 +201,7 @@ struct SettingsView: View {
         .frame(width: 280)
         .fixedSize(horizontal: false, vertical: true)
         .modifier(SettingsPanelSurface(reduceTransparency: reduceTransparency, maskImage: Self.backgroundMask))
+        .preferredColorScheme(.dark)
         .onAppear {
             launchAtLogin.checkStatus()
             checkServerReachability()
@@ -233,7 +233,12 @@ struct SettingsView: View {
 
 private enum SettingsAppearance {
     static let accent = Color(red: 229/255, green: 160/255, blue: 13/255)
-    static let controlFill = Color(nsColor: .labelColor).opacity(0.07)
+    static let controlFill = Color.white.opacity(0.1)
+    static let selectionFill = LinearGradient(
+        colors: [accent, Color(red: 204/255, green: 123/255, blue: 2/255)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 }
 
 private struct SettingsPanelSurface: ViewModifier {
@@ -253,12 +258,13 @@ private struct SettingsPanelSurface: ViewModifier {
     func body(content: Content) -> some View {
         if reduceTransparency {
             content.background(Color(nsColor: .windowBackgroundColor), in: shape)
-        } else if #available(macOS 26.0, *) {
-            content.glassEffect(.regular, in: shape)
         } else {
             content.background(
-                VisualEffectView(material: .popover, blendingMode: .behindWindow, maskImage: maskImage)
-                    .clipShape(shape)
+                ZStack {
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow, maskImage: maskImage)
+                    Color(red: 13/255, green: 13/255, blue: 13/255).opacity(0.60)
+                }
+                .clipShape(shape)
             )
         }
     }
@@ -286,7 +292,11 @@ struct SegmentedControl<T: RawRepresentable & Equatable>: View where T.RawValue 
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 10)
-                        .background(isSelected ? SettingsAppearance.accent : .clear)
+                        .background {
+                            if isSelected {
+                                SettingsAppearance.selectionFill
+                            }
+                        }
                         .cornerRadius(8)
                         .contentShape(Rectangle())
                 }
@@ -322,7 +332,11 @@ struct SegmentedControlBool: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-                        .background(isSelected ? SettingsAppearance.accent : .clear)
+                        .background {
+                            if isSelected {
+                                SettingsAppearance.selectionFill
+                            }
+                        }
                         .cornerRadius(8)
                         .contentShape(Rectangle())
                 }
