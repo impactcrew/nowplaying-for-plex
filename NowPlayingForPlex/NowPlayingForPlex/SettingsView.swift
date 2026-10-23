@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ObservedObject var settings: WidgetSettings
     @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
     @State private var isServerReachable: Bool = true
@@ -47,84 +48,92 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Theme")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(.primary)
 
                     SegmentedControl(
                         options: [Theme.light, Theme.dark],
                         selection: $settings.theme
                     )
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Theme")
 
                 // Layout Style
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Layout Style")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(.primary)
 
                     SegmentedControl(
                         options: [LayoutStyle.side, LayoutStyle.overlay, LayoutStyle.mini],
                         selection: $settings.layoutStyle
                     )
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Layout Style")
 
                 // Album Art Shape
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Album Art Shape")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(.primary)
 
                     SegmentedControl(
                         options: [AlbumArtShape.square, AlbumArtShape.circular],
                         selection: $settings.albumArtShape
                     )
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Album Art Shape")
 
                 // Glow Effect
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Glow Effect")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(.primary)
 
                     SegmentedControlBool(
                         labels: ["On", "Off"],
                         selection: $settings.blueGlowEnabled
                     )
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Glow Effect")
 
                 // Glow Colour (only visible when Glow Effect is On)
                 if settings.blueGlowEnabled {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Glow Colour")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.85))
+                            .foregroundColor(.primary)
 
                         ColourPicker(selection: $settings.glowColour)
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("Glow colour")
                 }
 
                 // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(height: 1)
+                Divider()
 
                 // Launch at Login
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Launch at Login")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                         Text("Start widget when you log in")
                             .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundColor(.secondary)
                     }
 
                     Spacer()
 
                     PlexToggle(isOn: $launchAtLogin.isEnabled)
+                        .accessibilityLabel("Launch at login")
                 }
                 .padding(12)
-                .background(Color.white.opacity(0.1))
+                .background(SettingsAppearance.controlFill)
                 .cornerRadius(10)
 
                 // Server Status + Quit
@@ -140,17 +149,21 @@ struct SettingsView: View {
 
                             Text(displayUrl)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
+                                .foregroundColor(.primary)
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Server \(displayUrl)")
+                        .accessibilityValue(isServerReachable ? "Connected" : "Unavailable")
 
                         Button(action: {
                             showResetConfirmation = true
                         }) {
                             Text("Change Server")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(.secondary)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .frame(minHeight: 28, alignment: .leading)
                         .padding(.leading, 14)
                     }
                     .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
@@ -175,43 +188,20 @@ struct SettingsView: View {
                             Text("Quit")
                                 .font(.system(size: 13, weight: .medium))
                         }
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.primary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.1))
+                        .background(SettingsAppearance.controlFill)
                         .cornerRadius(8)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(24)
-            .background(
-                ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow, maskImage: Self.backgroundMask)
-                    Color(red: 13/255, green: 13/255, blue: 13/255).opacity(0.85)
-                }
-                .clipShape(
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 0,
-                        bottomLeadingRadius: 20,
-                        bottomTrailingRadius: 20,
-                        topTrailingRadius: 0
-                    )
-                )
-            )
-            .overlay(
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 0,
-                    bottomLeadingRadius: 20,
-                    bottomTrailingRadius: 20,
-                    topTrailingRadius: 0
-                )
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.5), radius: 40, x: 0, y: 10)
-            .shadow(color: Color.black.opacity(0.4), radius: 60, x: 0, y: 20)
         }
         .frame(width: 280)
+        .fixedSize(horizontal: false, vertical: true)
+        .modifier(SettingsPanelSurface(reduceTransparency: reduceTransparency, maskImage: Self.backgroundMask))
         .onAppear {
             launchAtLogin.checkStatus()
             checkServerReachability()
@@ -241,8 +231,42 @@ struct SettingsView: View {
     }
 }
 
+private enum SettingsAppearance {
+    static let accent = Color(red: 229/255, green: 160/255, blue: 13/255)
+    static let controlFill = Color(nsColor: .labelColor).opacity(0.07)
+}
+
+private struct SettingsPanelSurface: ViewModifier {
+    let reduceTransparency: Bool
+    let maskImage: NSImage
+
+    private var shape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 0,
+            bottomLeadingRadius: 20,
+            bottomTrailingRadius: 20,
+            topTrailingRadius: 0
+        )
+    }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if reduceTransparency {
+            content.background(Color(nsColor: .windowBackgroundColor), in: shape)
+        } else if #available(macOS 26.0, *) {
+            content.glassEffect(.regular, in: shape)
+        } else {
+            content.background(
+                VisualEffectView(material: .popover, blendingMode: .behindWindow, maskImage: maskImage)
+                    .clipShape(shape)
+            )
+        }
+    }
+}
+
 // MARK: - Segmented Control
 struct SegmentedControl<T: RawRepresentable & Equatable>: View where T.RawValue == String {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let options: [T]
     @Binding var selection: T
 
@@ -250,49 +274,35 @@ struct SegmentedControl<T: RawRepresentable & Equatable>: View where T.RawValue 
         HStack(spacing: 2) {
             ForEach(options.indices, id: \.self) { index in
                 let option = options[index]
+                let isSelected = selection == option
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                         selection = option
                     }
                 }) {
                     Text(option.rawValue)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(selection == option ? .black : .white.opacity(0.9))
+                        .foregroundColor(isSelected ? .black : .primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 10)
-                        .background(
-                            Group {
-                                if selection == option {
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(red: 229/255, green: 160/255, blue: 13/255),
-                                            Color(red: 204/255, green: 123/255, blue: 2/255)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                } else {
-                                    Color.clear
-                                }
-                            }
-                        )
+                        .background(isSelected ? SettingsAppearance.accent : .clear)
                         .cornerRadius(8)
-                        .shadow(color: selection == option ? Color.black.opacity(0.15) : .clear, radius: 4, x: 0, y: 2)
                         .contentShape(Rectangle())
-                        .zIndex(selection == option ? 2 : 1)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(2)
-        .background(Color.white.opacity(0.15))
+        .background(SettingsAppearance.controlFill)
         .cornerRadius(10)
     }
 }
 
 // MARK: - Boolean Segmented Control (for On/Off)
 struct SegmentedControlBool: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let labels: [String]
     @Binding var selection: Bool
 
@@ -300,81 +310,62 @@ struct SegmentedControlBool: View {
         HStack(spacing: 2) {
             ForEach(0..<labels.count, id: \.self) { index in
                 let isOn = index == 0
-                let isSelected = (isOn && selection) || (!isOn && !selection)
-
+                let isSelected = selection == isOn
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                         selection = isOn
                     }
                 }) {
                     Text(labels[index])
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(isSelected ? .black : .white.opacity(0.9))
+                        .foregroundColor(isSelected ? .black : .primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-                        .background(
-                            Group {
-                                if isSelected {
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(red: 229/255, green: 160/255, blue: 13/255),
-                                            Color(red: 204/255, green: 123/255, blue: 2/255)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                } else {
-                                    Color.clear
-                                }
-                            }
-                        )
+                        .background(isSelected ? SettingsAppearance.accent : .clear)
                         .cornerRadius(8)
-                        .shadow(color: isSelected ? Color.black.opacity(0.15) : .clear, radius: 4, x: 0, y: 2)
                         .contentShape(Rectangle())
-                        .zIndex(isSelected ? 2 : 1)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(2)
-        .background(Color.white.opacity(0.15))
+        .background(SettingsAppearance.controlFill)
         .cornerRadius(10)
     }
 }
 
 // MARK: - Colour Picker
 struct ColourPicker: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var selection: GlowColour
 
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
             ForEach(GlowColour.allCases, id: \.self) { colour in
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                         selection = colour
                     }
                 }) {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(colour.gradient)
                         .aspectRatio(1, contentMode: .fit)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    selection == colour ? Color.white.opacity(0.9) : Color.clear,
-                                    lineWidth: 2
-                                )
-                        )
-                        .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 2)
-                        .shadow(
-                            color: selection == colour ? Color.black.opacity(0.3) : Color.clear,
-                            radius: 12,
-                            x: 0,
-                            y: 4
-                        )
-                        .scaleEffect(selection == colour ? 1.0 : 1.0)
+                        .overlay {
+                            if selection == colour {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.primary, lineWidth: 2)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black.opacity(0.5), radius: 1)
+                            }
+                        }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityLabel(colour.rawValue.capitalized)
+                .accessibilityAddTraits(selection == colour ? .isSelected : [])
             }
         }
     }
@@ -385,45 +376,11 @@ struct PlexToggle: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        Button(action: {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isOn.toggle()
-            }
-        }) {
-            ZStack(alignment: isOn ? .trailing : .leading) {
-                // Background
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        isOn ?
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 229/255, green: 160/255, blue: 13/255),
-                                Color(red: 204/255, green: 123/255, blue: 2/255)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0.3),
-                                Color.white.opacity(0.3)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 40, height: 24)
-
-                // Knob
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 20, height: 20)
-                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                    .padding(2)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .frame(width: 40, height: 24)
+        Toggle("Launch at login", isOn: $isOn)
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .tint(SettingsAppearance.accent)
+            .frame(minWidth: 40, minHeight: 28)
     }
 }
 
