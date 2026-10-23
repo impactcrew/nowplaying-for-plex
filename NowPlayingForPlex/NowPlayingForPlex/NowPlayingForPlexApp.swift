@@ -196,7 +196,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
         window.isMovableByWindowBackground = true
-        window.hasShadow = true
+        // The player draws its own shadows; a system shadow outlines the transparent window.
+        window.hasShadow = false
 
         // Set content view
         let contentView = ContentView(settings: settings)
