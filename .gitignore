@@ -54,3 +54,6 @@ docs/
 # OSS Dev Workflow (auto-added)
 .oss/*
 !.oss/dev/
+
+# Disposable development files
+dev/scratch/
