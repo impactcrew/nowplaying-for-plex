@@ -1,8 +1,8 @@
 # Dark translucent settings menu
 
-- Direction: a dark control panel beside the album sleeve, retaining the original menu character with more visible background blur.
+- Direction: a dark control panel beside the album sleeve, retaining the original menu character with direct desktop visibility.
 - User correction: the pale system-adaptive glass lost the original appearance. This menu must remain dark regardless of the desktop appearance or player Theme selection.
-- Surface: native HUD blur with a 60 percent charcoal overlay, reduced from the original 85 percent. Preserve transparency and the native blur mask.
+- Surface: a 60 percent charcoal fill with 40 percent direct desktop visibility, without native HUD material or blur. The user could not see the desktop through the material, so it was removed. System Reduce Transparency was confirmed disabled.
 - Geometry: retain the square top corners, 20-point lower corners, 280-point width, 24-point inset and section spacing, and system font sizes.
 - Text: primary and secondary semantic colors under a forced dark color scheme.
 - Selection: restore the original Plex orange gradient from #E5A00D to #CC7B02 with black selected text.
