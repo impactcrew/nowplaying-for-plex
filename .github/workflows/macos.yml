@@ -1,0 +1,41 @@
+name: macOS checks
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check Xcode version
+        run: xcodebuild -version
+      - name: Test packaging
+        run: bash NowPlayingForPlex/NowPlayingForPlexTests/test-packaging.sh
+      - name: Run native regression tests
+        run: >
+          xcodebuild -project NowPlayingForPlex/NowPlayingForPlex.xcodeproj
+          -scheme PlexWidget -destination 'platform=macOS'
+          -derivedDataPath build/test
+          -parallel-testing-enabled NO
+          test
+      - name: Build unsigned universal app
+        run: >
+          xcodebuild -project NowPlayingForPlex/NowPlayingForPlex.xcodeproj
+          -scheme PlexWidget -configuration Release -destination 'generic/platform=macOS'
+          -derivedDataPath build/release
+          'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO
+          build
+      - name: Verify release bundle
+        run: bash NowPlayingForPlex/check-bundle.sh build/release/Build/Products/Release/PlexWidget.app

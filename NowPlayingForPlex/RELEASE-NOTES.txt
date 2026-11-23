@@ -2,6 +2,8 @@
 PLEXWIDGET v1.0 - CRITICAL FIX RELEASE NOTES
 ================================================================================
 
+Historical notes for v1.0. For the current release process, see CONTRIBUTING.md.
+
 ISSUE RESOLVED
 ==============
 Network error -1009 "No internet connection" during onboarding validation
@@ -58,17 +60,8 @@ Network Status:
 
 DEPLOYMENT
 ==========
-Development/Testing:
-  $ cd /Volumes/LIME2/Work/Development/plex-desktop-widget/PlexWidget
-  $ ./build.sh
-  $ cp -R build/PlexWidget.app /Applications/
-  $ open /Applications/PlexWidget.app
-
-Production Release:
-  Same process. For production certificates, change line 71 from:
-  codesign -s - --deep --force "$UNIVERSAL_APP"
-  to:
-  codesign -s "Developer ID Application: Your Company" --deep --force "$UNIVERSAL_APP"
+See the direct-download release section of CONTRIBUTING.md for the current
+Developer ID and notarization workflow.
 
 TESTING CHECKLIST
 =================

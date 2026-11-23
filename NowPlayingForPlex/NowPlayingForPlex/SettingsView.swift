@@ -3,12 +3,25 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ObservedObject var settings: WidgetSettings
+    @ObservedObject var plexAPI: PlexAPI
     @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
-    @State private var isServerReachable: Bool = true
-    @State private var showResetConfirmation: Bool = false
+    let changeServer: () -> Void
+    let resetPosition: () -> Void
+    let dismiss: () -> Void
+
+    private var connectionStatus: String {
+        if plexAPI.isLoading { return "Checking connection" }
+        return plexAPI.errorMessage == nil ? "Connected" : "Unavailable"
+    }
+
+    private var connectionColor: Color {
+        if plexAPI.isLoading { return .secondary }
+        if plexAPI.errorMessage != nil { return Color(red: 1, green: 80/255, blue: 150/255) }
+        return Color(red: 40/255, green: 200/255, blue: 120/255)
+    }
 
     private var serverUrl: String {
-        ConfigManager.shared.getServerUrl() ?? "Not configured"
+        plexAPI.displayServerURL ?? "Plex server"
     }
 
     private var displayUrl: String {
@@ -121,28 +134,38 @@ struct SettingsView: View {
                 .background(SettingsAppearance.controlFill)
                 .cornerRadius(10)
 
-                // Server Status + Quit
+                Picker("Playback Source", selection: $plexAPI.preferredSourceID) {
+                    Text("Automatic").tag(nil as String?)
+                    if let preferredSourceID = plexAPI.preferredSourceID,
+                       !plexAPI.availableSources.contains(where: { $0.id == preferredSourceID }) {
+                        Text("Selected source (offline)").tag(preferredSourceID as String?)
+                    }
+                    ForEach(plexAPI.availableSources) { source in
+                        Text(source.label).tag(source.id as String?)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                // Server status and widget actions
                 HStack(alignment: .top) {
                     // Left side: Server info
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Circle()
-                                .fill(isServerReachable ?
-                                    Color(red: 40/255, green: 200/255, blue: 120/255) :
-                                    Color(red: 255/255, green: 80/255, blue: 150/255))
+                                .fill(connectionColor)
                                 .frame(width: 8, height: 8)
 
                             Text(displayUrl)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         }
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Server \(displayUrl)")
-                        .accessibilityValue(isServerReachable ? "Connected" : "Unavailable")
+                        .accessibilityValue(connectionStatus)
 
-                        Button(action: {
-                            showResetConfirmation = true
-                        }) {
+                        Button(action: changeServer) {
                             Text("Change Server")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.secondary)
@@ -150,33 +173,31 @@ struct SettingsView: View {
                         .buttonStyle(PlainButtonStyle())
                         .padding(.leading, 14)
                     }
-                    .alert("Reset Server Configuration?", isPresented: $showResetConfirmation) {
-                        Button("Cancel", role: .cancel) { }
-                        Button("Reset", role: .destructive) {
-                            ConfigManager.shared.clearConfig()
-                            NotificationCenter.default.post(name: NSNotification.Name("ShowOnboarding"), object: nil)
-                        }
-                    } message: {
-                        Text("This will clear your server settings and show the setup screen.")
-                    }
 
                     Spacer()
 
-                    // Right side: Quit button
-                    Button(action: {
-                        NSApplication.shared.terminate(nil)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "power")
-                                .font(.system(size: 12, weight: .medium))
-                            Text("Quit")
-                                .font(.system(size: 13, weight: .medium))
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Button(action: {
+                            NSApplication.shared.terminate(nil)
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "power")
+                                    .font(.system(size: 12, weight: .medium))
+                                Text("Quit")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(SettingsAppearance.controlFill)
+                            .cornerRadius(8)
                         }
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(SettingsAppearance.controlFill)
-                        .cornerRadius(8)
+                        Button(action: resetPosition) {
+                            Text("Reset Position")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .fixedSize()
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -187,32 +208,10 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
         .modifier(SettingsPanelSurface(reduceTransparency: reduceTransparency))
         .preferredColorScheme(.dark)
+        .onExitCommand(perform: dismiss)
         .onAppear {
             launchAtLogin.checkStatus()
-            checkServerReachability()
         }
-    }
-
-    private func checkServerReachability() {
-        guard let config = ConfigManager.shared.loadConfig(),
-              let url = URL(string: "\(config.plexServerUrl)/status/sessions") else {
-            isServerReachable = false
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue(config.plexToken, forHTTPHeaderField: "X-Plex-Token")
-        request.timeoutInterval = 5
-
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            DispatchQueue.main.async {
-                if let httpResponse = response as? HTTPURLResponse {
-                    isServerReachable = (200...299).contains(httpResponse.statusCode)
-                } else {
-                    isServerReachable = false
-                }
-            }
-        }.resume()
     }
 }
 
@@ -410,7 +409,13 @@ struct SettingsView_Previews: PreviewProvider {
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
 
-            SettingsView(settings: WidgetSettings.shared)
+            SettingsView(
+                settings: WidgetSettings.shared,
+                plexAPI: PlexAPI(serverUrl: "", token: ""),
+                changeServer: {},
+                resetPosition: {},
+                dismiss: {}
+            )
         }
         .frame(width: 500, height: 700)
     }
