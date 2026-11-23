@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>NowPlaying for Plex repair plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root { --paper: #fff; --cover: #1d0133; --ink: #170f29; --quiet: #54496a; --accent: #7505cc; --rule: #d8cde8; --highlight: #deeb0c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.65 "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif; }
+    .shell { width: min(100% - 44px, 1040px); margin-inline: auto; }
+    header { padding-block: 72px 64px; background: var(--cover); color: #f2eef8; -webkit-font-smoothing: antialiased; }
+    h1, h2 { font: 700 2rem/1.12 "Space Grotesk", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.035em; }
+    h1 { margin: 0 0 16px; font-size: clamp(2.35rem, 6vw, 4.5rem); text-wrap: balance; }
+    header p { margin: 0; color: #c4b5dc; }
+    main { padding-block: 36px 80px; }
+    section { max-width: 780px; margin-top: 40px; padding-top: 24px; border-top: 2px solid var(--rule); }
+    h2 { margin: 0 0 16px; color: var(--accent); }
+    p { max-width: 760px; margin: 0 0 12px; }
+    mark { background: var(--highlight); color: var(--ink); padding-inline: 4px; font-weight: 700; }
+    ol { margin: 0; padding-inline-start: 1.5em; }
+    li { margin-block: 0 16px; padding-inline-start: .25em; }
+    li p { margin: 3px 0 0; color: var(--quiet); font-size: .92rem; }
+    a { color: var(--accent); text-underline-offset: .18em; }
+    a:hover { text-decoration-thickness: .15em; }
+    @media (max-width: 600px) { header { padding-block: 44px 36px; } section { margin-top: 28px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <h1>Repair plan and to-do</h1>
+      <p>NowPlaying for Plex · 23 November 2026</p>
+    </div>
+  </header>
+  <main class="shell">
+    <p><mark>Start with the release blockers.</mark> Repair packaging, credential handling and server changes in parallel. Then combine the playback and window fixes, run the regression suite, and inspect the bundle produced by the release build.</p>
+    <p><a href="review.html">Read the hostile repo review</a></p>
+    <section>
+      <h2>To-do</h2>
+      <ol>
+        <li id="installer"><strong>Package into a private staging folder and detach only the disk image device created by that run.</strong><p>Exercise successful packaging and cleanup after an injected failure.</p></li>
+        <li id="distribution"><strong>Build a Developer ID signing and notarization path and replace the quarantine workaround in the install guide.</strong><p>Verify the release flow in isolation. A real signed release needs Apple credentials and a separate release check.</p></li>
+        <li id="transport"><strong>Protect Plex credentials in Keychain in all builds, require HTTPS for remote endpoints, and make local HTTP an explicit choice.</strong><p>Test URL policy, redirect boundaries and credential migration with fixtures.</p></li>
+        <li id="replacement"><strong>Keep the current Plex connection until the replacement validates and saves. Restore the working view on Cancel.</strong><p>Test failed writes and the cancel path. Confirm the active configuration persists.</p></li>
+        <li id="playback"><strong>Choose a playing music session consistently and let the user select a playback source.</strong><p>Test playing versus paused, reordered responses and a preferred source that has stopped.</p></li>
+        <li id="validation"><strong>Have setup and polling use the same Plex response validation.</strong><p>Distinguish valid empty sessions from unrelated or invalid responses.</p></li>
+        <li id="artwork"><strong>Cancel stale artwork work and prevent old images from replacing the current cover.</strong><p>Test out-of-order completion, idle playback and an image load failure.</p></li>
+        <li id="keyboard"><strong>Make settings keyboard reachable and return focus on dismissal.</strong><p>Check the window can become key and include Tab and Escape in the desktop smoke test.</p></li>
+        <li id="display"><strong>Keep the widget visible after monitor and layout changes and add Reset Position.</strong><p>Test saved coordinates on missing and secondary displays.</p></li>
+        <li id="bundle"><strong>Use Xcode for bundle versions and include the privacy manifest.</strong><p>Inspect the built bundle’s metadata, resources and both architecture slices.</p></li>
+        <li id="prototype"><strong>Retire the unsupported Electron prototype and ignore local credentials from older checkouts.</strong><p>Confirm the old entry point is gone and the credential file is excluded from Git.</p></li>
+        <li id="ci"><strong>Add a macOS build and test job with packaging and bundle checks. Align the build and contribution docs.</strong><p>Run the checks locally where available and keep hosted CI status explicit.</p></li>
+      </ol>
+    </section>
+    <section>
+      <h2>Release check</h2>
+      <p>Check the app on a clean Mac with a Plex server, including the menu keyboard flow and a second display. Verify signing, notarization and launch from the exact DMG before publishing.</p>
+    </section>
+  </main>
+</body>
+</html>
