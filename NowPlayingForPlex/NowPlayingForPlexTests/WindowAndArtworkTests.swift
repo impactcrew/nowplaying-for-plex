@@ -3,6 +3,39 @@ import XCTest
 @testable import PlexWidget
 
 final class WindowAndArtworkTests: XCTestCase {
+    @MainActor
+    func testDragSurfaceAcceptsFirstMouseInAnInactiveWindow() {
+        XCTAssertTrue(WindowDragView().acceptsFirstMouse(for: nil))
+    }
+
+    @MainActor
+    func testDraggingPassesTheInitialMouseEventToAppKit() throws {
+        _ = NSApplication.shared
+        let window = DragRecordingWindow(
+            contentRect: CGRect(x: 0, y: 0, width: 100, height: 50),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: true
+        )
+        let dragView = WindowDragView()
+        window.contentView = dragView
+        let event = try XCTUnwrap(NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: CGPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 1,
+            clickCount: 1,
+            pressure: 1
+        ))
+
+        dragView.mouseDown(with: event)
+
+        XCTAssertTrue(window.dragEvent === event)
+    }
+
     func testWidgetFromDisconnectedDisplayMovesToPrimaryVisibleArea() {
         let primary = CGRect(x: 0, y: 40, width: 1440, height: 820)
         let savedFrame = CGRect(x: 1850, y: 40, width: 592, height: 232)
@@ -87,6 +120,14 @@ final class WindowAndArtworkTests: XCTestCase {
         await request.value
 
         XCTAssertNil(artwork.image)
+    }
+}
+
+private final class DragRecordingWindow: NSWindow {
+    private(set) var dragEvent: NSEvent?
+
+    override func performDrag(with event: NSEvent) {
+        dragEvent = event
     }
 }
 

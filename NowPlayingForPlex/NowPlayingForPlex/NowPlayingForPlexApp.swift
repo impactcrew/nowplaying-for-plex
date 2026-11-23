@@ -48,11 +48,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: NSApp
         )
 
-        if let config = ConfigManager.shared.loadConfig() {
+        let savedConnection = ConfigManager.shared.loadSavedConnection()
+        if let config = savedConnection.config {
             NSApp.setActivationPolicy(.accessory)
             showMainWidget(config: config)
         } else {
-            showOnboarding()
+            showOnboarding(savedConnection: savedConnection)
         }
 
         // Create menu bar item with Plex chevron icon
@@ -85,14 +86,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func showOnboarding() {
+    private func showOnboarding(savedConnection: SavedPlexConnection? = nil) {
         if let onboardingWindow, onboardingWindow.isVisible {
             NSApp.activate(ignoringOtherApps: true)
             onboardingWindow.makeKeyAndOrderFront(nil)
             return
         }
 
-        let currentConfig = ConfigManager.shared.loadConfig()
+        let savedConnection = savedConnection ?? ConfigManager.shared.loadSavedConnection()
+        let currentConfig = savedConnection.config
         let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
         let size = NSSize(width: 520, height: 600)
         let setupWindow = KeyableWindow(
@@ -109,19 +111,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupWindow.isOpaque = false
         setupWindow.backgroundColor = .clear
         setupWindow.level = .floating
-        setupWindow.isMovableByWindowBackground = true
+        let savedConnectionMessage: String?
+        let retrySavedConnection: (() -> Bool)?
+        switch savedConnection {
+        case .unavailable:
+            savedConnectionMessage = "Unable to read your saved Plex connection. Check Keychain access, then retry it here."
+            retrySavedConnection = { [weak self, weak setupWindow] in
+                guard let self, let setupWindow,
+                      let config = ConfigManager.shared.loadSavedConnection().config else { return false }
+                self.finishOnboarding(setupWindow, config: config)
+                return true
+            }
+        case .needsReview:
+            savedConnectionMessage = "The saved server address and Plex token could not be matched. Check your server address and enter its token to reconnect."
+            retrySavedConnection = nil
+        case .available, .missing:
+            savedConnectionMessage = nil
+            retrySavedConnection = nil
+        }
 
         let onboardingView = OnboardingView(
-            onComplete: { [weak self, weak setupWindow] _, _ in
+            onComplete: { [weak self, weak setupWindow] config in
                 guard let self, let setupWindow else { return }
-                self.finishOnboarding(setupWindow, completed: true)
+                self.finishOnboarding(setupWindow, config: config)
             },
             onClose: { [weak self, weak setupWindow] in
                 guard let self, let setupWindow else { return }
-                self.finishOnboarding(setupWindow, completed: false)
+                self.finishOnboarding(setupWindow)
             },
             initialServerURL: currentConfig?.plexServerUrl ?? ConfigManager.shared.getServerUrl() ?? "",
-            initialAllowsLocalHTTP: currentConfig?.allowsLocalHTTP ?? false
+            initialAllowsLocalHTTP: currentConfig?.allowsLocalHTTP ?? false,
+            savedConnectionMessage: savedConnectionMessage,
+            retrySavedConnection: retrySavedConnection
         )
         setupWindow.contentView = NSHostingView(rootView: onboardingView)
         onboardingWindow = setupWindow
@@ -131,14 +152,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupWindow.makeKeyAndOrderFront(nil)
     }
 
-    private func finishOnboarding(_ setupWindow: NSWindow, completed: Bool) {
+    private func finishOnboarding(_ setupWindow: NSWindow, config: PlexConfig? = nil) {
         // AppKit may still be dispatching the hosted view's button action.
         DispatchQueue.main.async { [weak self, weak setupWindow] in
             guard let self, let setupWindow, self.onboardingWindow === setupWindow else { return }
             setupWindow.orderOut(nil)
             self.onboardingWindow = nil
 
-            if completed, let config = ConfigManager.shared.loadConfig() {
+            if let config {
                 NSApp.setActivationPolicy(.accessory)
                 self.showMainWidget(config: config)
             } else if let window = self.window {
@@ -181,7 +202,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         widgetWindow.backgroundColor = .clear
         widgetWindow.level = .floating
         widgetWindow.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .transient]
-        widgetWindow.isMovableByWindowBackground = true
+        widgetWindow.isMovable = true
         // The player draws its own shadows.
         widgetWindow.hasShadow = false
         window = widgetWindow

@@ -15,7 +15,7 @@ final class PlexConnectionTests: XCTestCase {
         XCTAssertEqual(config.plexToken, "fixture-original")
     }
 
-    func testMigratesExistingCredentialsToOneProtectedRecord() throws {
+    func testMigratesExistingCredentialsAndPreservesTheOlderAppLogin() throws {
         let (manager, store, defaults) = fixtureConfigManager()
         defaults.set("http://192.168.1.3:32400", forKey: "plex-server-url")
         store.records["plex-token"] = Data("fixture-token".utf8)
@@ -23,9 +23,22 @@ final class PlexConnectionTests: XCTestCase {
         let config = try XCTUnwrap(manager.loadConfig())
         XCTAssertEqual(config.plexToken, "fixture-token")
         XCTAssertTrue(config.allowsLocalHTTP)
-        XCTAssertNil(store.records["plex-token"])
-        XCTAssertEqual(store.records.count, 1)
+        XCTAssertEqual(store.records["plex-token"], Data("fixture-token".utf8))
+        XCTAssertEqual(store.records.count, 2)
         XCTAssertEqual(ConfigManager(defaults: defaults, store: store).loadConfig()?.plexServerUrl, config.plexServerUrl)
+    }
+
+    func testSavingANewConnectionDoesNotChangeTheOlderAppLogin() throws {
+        let (manager, store, defaults) = fixtureConfigManager()
+        defaults.set("https://old.example.test", forKey: "plex-server-url")
+        store.records["plex-token"] = Data("fixture-original".utf8)
+
+        XCTAssertTrue(manager.saveConfig(serverUrl: "https://new.example.test", token: "fixture-new"))
+
+        XCTAssertEqual(defaults.string(forKey: "plex-server-url"), "https://old.example.test")
+        XCTAssertEqual(store.records["plex-token"], Data("fixture-original".utf8))
+        XCTAssertEqual(manager.loadConfig()?.plexServerUrl, "https://new.example.test")
+        XCTAssertEqual(manager.getServerUrl(), "https://new.example.test")
     }
 
     func testMigratesLegacyDebugTokenAndRemovesItsPlaintextCopy() throws {
@@ -44,8 +57,37 @@ final class PlexConnectionTests: XCTestCase {
         defaults.set("fixture-debug-token", forKey: "plex-token-debug")
         store.records["plex-token"] = Data("fixture-release-token".utf8)
 
-        XCTAssertNil(manager.loadConfig())
+        guard case .needsReview = manager.loadSavedConnection() else {
+            return XCTFail("An ambiguous token must not be paired with a server.")
+        }
         XCTAssertEqual(manager.getServerUrl(), "https://new.example.test")
+    }
+
+    func testSavedTokenWithoutItsAddressIsPreserved() {
+        let (manager, store, defaults) = fixtureConfigManager()
+        defaults.set("https://different.example.test", forKey: "plex-connection-server-url")
+        store.records["plex-token"] = Data("fixture-original".utf8)
+
+        guard case .needsReview = manager.loadSavedConnection() else {
+            return XCTFail("An old token must not be sent to an unmatched server.")
+        }
+        XCTAssertEqual(store.records["plex-token"], Data("fixture-original".utf8))
+        XCTAssertNil(store.records["plex-connection"])
+    }
+
+    func testKeychainAccessFailureCanBeRetried() {
+        let (manager, store, defaults) = fixtureConfigManager()
+        defaults.set("https://old.example.test", forKey: "plex-server-url")
+        store.records["plex-token"] = Data("fixture-original".utf8)
+        store.rejectReads = true
+
+        guard case .unavailable = manager.loadSavedConnection() else {
+            return XCTFail("Keychain access failure must be distinguishable from first run.")
+        }
+        XCTAssertEqual(store.records["plex-token"], Data("fixture-original".utf8))
+
+        store.rejectReads = false
+        XCTAssertEqual(manager.loadSavedConnection().config?.plexToken, "fixture-original")
     }
 
     func testAddressDefaultsToHTTPSAndBuildsSessionsUnderTheProxyPath() throws {
@@ -151,13 +193,16 @@ final class PlexConnectionTests: XCTestCase {
 private final class FixtureCredentialStore: PlexCredentialStore {
     var records: [String: Data] = [:]
     var rejectSaves = false
+    var rejectReads = false
 
-    func read(account: String) throws -> Data? { records[account] }
+    func read(account: String) throws -> Data? {
+        if rejectReads { throw CocoaError(.fileReadNoPermission) }
+        return records[account]
+    }
 
     func save(_ data: Data, account: String) throws {
         if rejectSaves { throw CocoaError(.fileWriteNoPermission) }
         records[account] = data
     }
 
-    func remove(account: String) throws { records.removeValue(forKey: account) }
 }
