@@ -8,6 +8,13 @@ case "$tool" in
     hdiutil)
         case "$1" in
             create) touch "${@: -1}" ;;
+            makehybrid)
+                contents="${@: -1}"
+                [[ -s "$contents/.background/background.png" && -s "$contents/.DS_Store" &&
+                    -s "$contents/.VolumeIcon.icns" && -d "$contents/NowPlaying for Plex.app" ]] || exit 1
+                [[ "$(readlink "$contents/Applications")" == /Applications ]] || exit 1
+                touch "${@: -2:1}"
+                ;;
             attach)
                 mount_dir="${@: -1}"
                 [[ "$mount_dir" == "$PLEX_PACKAGING_TEST_ROOT/"*"/mount" ]] || exit 1
