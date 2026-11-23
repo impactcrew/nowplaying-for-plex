@@ -29,6 +29,9 @@ xcuserdata/
 node_modules/
 package-lock.json
 
+# Credentials from older Electron checkouts
+/config.json
+
 # Binary releases (use GitHub Releases instead)
 *.dmg
 *.pkg
