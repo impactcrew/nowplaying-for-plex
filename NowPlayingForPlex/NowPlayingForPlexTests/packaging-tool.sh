@@ -37,7 +37,11 @@ case "$tool" in
         ;;
     convert) touch "${@: -1}" ;;
     osascript) [[ "${PLEX_PACKAGING_TEST_FAIL_FINDER:-}" != 1 ]] ;;
-    defaults|killall|SetFile|chflags|sleep|sync|sips|DeRez|Rez|lipo) ;;
+    defaults|killall|SetFile|chflags|sleep|sync|sips|DeRez|Rez) ;;
+    lipo)
+        [[ $# == 2 && "$1" == -archs && -f "$2" ]] || exit 1
+        printf '%s\n' "${PLEX_PACKAGING_TEST_ARCHS:-x86_64 arm64}"
+        ;;
     codesign) [[ "${PLEX_PACKAGING_TEST_SIGNED_APP:-}" == 1 ]] ;;
     xcrun)
         case "$1:$2" in
