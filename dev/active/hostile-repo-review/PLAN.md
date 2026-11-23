@@ -5,3 +5,7 @@
 - Deliver a source-linked HTML review and a short repair order. Keep application and release files outside the scope of this review.
 
 The review is in `review.html`. It covers 12 findings at the reviewed revision and records the checks and their limits. Source and metadata checks ran locally. The fresh unsigned build did not complete because Xcode's build service crashed in the sandbox.
+
+## Repairs
+
+Track the requested implementation in `repair-plan.html`. The release scripts, native connection behavior, window and artwork behavior, and legacy prototype are independent enough to work on in parallel. Integrate the app and test targets before final verification. A signed or published copy is a release step.
