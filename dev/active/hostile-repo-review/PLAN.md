@@ -11,3 +11,7 @@ The review is in `review.html`. It covers 12 findings at the reviewed revision a
 Track the requested implementation in `repair-plan.html`. The release scripts, native connection behavior, window and artwork behavior, and legacy prototype are independent enough to work on in parallel. Integrate the app and test targets before final verification. A signed or published copy is a release step.
 
 All 12 repository items are implemented. The standalone XCTest runner passed 18 tests, the optimized Swift sources built for arm64 and x86_64, and the packaging fixtures passed. The hosted Xcode run, interactive Mac and Plex checks, and final notarized-artifact check remain release acceptance tasks.
+
+## Test build feedback
+
+Preserve the older app's Keychain item and server address through migration, and distinguish read failures from first-run setup. Make the widget card and setup header draggable through AppKit. Rebuild with the app's normal sandbox entitlements and package with the approved disk image design. Verify the app bundle and disk image before replacing the test download link.

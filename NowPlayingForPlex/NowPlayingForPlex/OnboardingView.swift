@@ -8,19 +8,24 @@ struct OnboardingView: View {
     @State private var errorMessage: String?
     @FocusState private var focusedField: Field?
 
-    let onComplete: (String, String) -> Void
+    let onComplete: (PlexConfig) -> Void
     let onClose: (() -> Void)?
+    let retrySavedConnection: (() -> Bool)?
 
     init(
-        onComplete: @escaping (String, String) -> Void,
+        onComplete: @escaping (PlexConfig) -> Void,
         onClose: (() -> Void)? = nil,
         initialServerURL: String = "",
-        initialAllowsLocalHTTP: Bool = false
+        initialAllowsLocalHTTP: Bool = false,
+        savedConnectionMessage: String? = nil,
+        retrySavedConnection: (() -> Bool)? = nil
     ) {
         self.onComplete = onComplete
         self.onClose = onClose
+        self.retrySavedConnection = retrySavedConnection
         _serverUrl = State(initialValue: initialServerURL)
         _allowsLocalHTTP = State(initialValue: initialAllowsLocalHTTP)
+        _errorMessage = State(initialValue: savedConnectionMessage)
     }
 
     enum Field: Hashable {
@@ -51,6 +56,7 @@ struct OnboardingView: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("NowPlaying for Plex. Let's get you set up!")
+                .overlay { WindowDragArea().accessibilityHidden(true) }
 
                 // Instructions
                 VStack(alignment: .leading, spacing: 16) {
@@ -215,6 +221,17 @@ struct OnboardingView: View {
                     ))
                 }
 
+                if let retrySavedConnection {
+                    Button("Retry Saved Connection") {
+                        if !retrySavedConnection() {
+                            errorMessage = "Still unable to read your saved Plex connection. Check Keychain access and try again."
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(red: 1, green: 0.72, blue: 0.31))
+                    .disabled(isValidating)
+                }
+
                 // Continue Button
                 Button(action: validateAndSave) {
                     HStack(spacing: 8) {
@@ -345,12 +362,16 @@ struct OnboardingView: View {
                 let client = PlexClient(address: address, token: cleanToken, clientIdentifier: "plex-desktop-widget-validation")
                 _ = try await client.sessions()
                 try Task.checkCancellation()
-                let cleanURL = address.url.absoluteString
-                guard ConfigManager.shared.saveConfig(serverUrl: cleanURL, token: cleanToken, allowsLocalHTTP: address.url.scheme == "http") else {
+                let config = PlexConfig(
+                    plexServerUrl: address.url.absoluteString,
+                    plexToken: cleanToken,
+                    allowsLocalHTTP: address.url.scheme == "http"
+                )
+                guard ConfigManager.shared.saveConfig(serverUrl: config.plexServerUrl, token: config.plexToken, allowsLocalHTTP: config.allowsLocalHTTP) else {
                     errorMessage = "Your Plex connection could not be saved. Check Keychain access and try again."
                     return
                 }
-                onComplete(cleanURL, cleanToken)
+                onComplete(config)
             } catch let error as URLError where [.secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot].contains(error.code) {
                 if !Task.isCancelled {
                     errorMessage = "Check the server address and its HTTPS certificate, then try again."
@@ -612,5 +633,5 @@ struct TransparentTextFieldStyled<Field: View>: View {
 }
 
 #Preview {
-    OnboardingView(onComplete: { _, _ in })
+    OnboardingView(onComplete: { _ in })
 }

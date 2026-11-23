@@ -7,10 +7,21 @@ struct PlexConfig: Codable {
     let allowsLocalHTTP: Bool
 }
 
+enum SavedPlexConnection {
+    case available(PlexConfig)
+    case missing
+    case needsReview
+    case unavailable
+
+    var config: PlexConfig? {
+        if case let .available(config) = self { return config }
+        return nil
+    }
+}
+
 protocol PlexCredentialStore {
     func read(account: String) throws -> Data?
     func save(_ data: Data, account: String) throws
-    func remove(account: String) throws
 }
 
 final class ConfigManager {
@@ -18,7 +29,8 @@ final class ConfigManager {
 
     private let connectionAccount = "plex-connection"
     private let legacyTokenAccount = "plex-token"
-    private let serverUrlKey = "plex-server-url"
+    private let serverURLKey = "plex-connection-server-url"
+    private let legacyServerURLKey = "plex-server-url"
     private let debugTokenKey = "plex-token-debug"
     private let defaults: UserDefaults
     private let store: PlexCredentialStore
@@ -29,16 +41,20 @@ final class ConfigManager {
     }
 
     func loadConfig() -> PlexConfig? {
+        loadSavedConnection().config
+    }
+
+    func loadSavedConnection() -> SavedPlexConnection {
         do {
             if let connection = try store.read(account: connectionAccount) {
                 let config = try JSONDecoder().decode(PlexConfig.self, from: connection)
-                cleanUpLegacyPreferences(serverURL: config.plexServerUrl)
-                return config
+                saveServerHint(config.plexServerUrl)
+                return .available(config)
             }
 
             return try migrateLegacyConfig()
         } catch {
-            return nil
+            return .unavailable
         }
     }
 
@@ -51,45 +67,46 @@ final class ConfigManager {
             return false
         }
 
-        cleanUpLegacyPreferences(serverURL: serverUrl)
-        try? store.remove(account: legacyTokenAccount)
+        // Keep the older app's Keychain entry and its associated address intact.
+        saveServerHint(serverUrl)
         return true
     }
 
     func getServerUrl() -> String? {
-        defaults.string(forKey: serverUrlKey)
+        defaults.string(forKey: serverURLKey) ?? defaults.string(forKey: legacyServerURLKey)
     }
 
-    private func cleanUpLegacyPreferences(serverURL: String) {
-        if getServerUrl() != serverURL {
-            defaults.set(serverURL, forKey: serverUrlKey)
+    private func saveServerHint(_ serverURL: String) {
+        if defaults.string(forKey: serverURLKey) != serverURL {
+            defaults.set(serverURL, forKey: serverURLKey)
         }
         if defaults.object(forKey: debugTokenKey) != nil {
             defaults.removeObject(forKey: debugTokenKey)
         }
     }
 
-    private func migrateLegacyConfig() throws -> PlexConfig? {
-        guard let serverURL = getServerUrl() else { return nil }
-
+    private func migrateLegacyConfig() throws -> SavedPlexConnection {
         let legacyToken = try store.read(account: legacyTokenAccount).flatMap { String(data: $0, encoding: .utf8) }
         let debugToken = defaults.string(forKey: debugTokenKey)
+        guard let token = legacyToken ?? debugToken else {
+            return getServerUrl() == nil ? .missing : .needsReview
+        }
+        guard let serverURL = defaults.string(forKey: legacyServerURLKey) else { return .needsReview }
         // Debug and Release once shared an address field but wrote their tokens to different stores.
         // Different surviving tokens require the user to validate the address and token together.
         if let legacyToken, let debugToken, legacyToken != debugToken {
-            return nil
+            return .needsReview
         }
-        guard let token = legacyToken ?? debugToken else { return nil }
 
         let allowsLocalHTTP = PlexServerAddress.isLegacyLocalHTTP(serverURL)
+        let config = PlexConfig(plexServerUrl: serverURL, plexToken: token, allowsLocalHTTP: allowsLocalHTTP)
         if saveConfig(serverUrl: serverURL, token: token, allowsLocalHTTP: allowsLocalHTTP) {
-            return PlexConfig(plexServerUrl: serverURL, plexToken: token, allowsLocalHTTP: allowsLocalHTTP)
+            return .available(config)
         }
 
         // A legacy Release login can remain usable if migration fails temporarily.
         // A legacy Debug token must move to Keychain before it can be used.
-        guard let legacyToken else { return nil }
-        return PlexConfig(plexServerUrl: serverURL, plexToken: legacyToken, allowsLocalHTTP: allowsLocalHTTP)
+        return legacyToken == nil ? .unavailable : .available(config)
     }
 }
 
@@ -123,13 +140,6 @@ private struct KeychainPlexCredentialStore: PlexCredentialStore {
             }
         }
         guard status == errSecSuccess else { throw KeychainError(status: status) }
-    }
-
-    func remove(account: String) throws {
-        let status = SecItemDelete(key(account) as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError(status: status)
-        }
     }
 
     private func key(_ account: String) -> [String: Any] {
