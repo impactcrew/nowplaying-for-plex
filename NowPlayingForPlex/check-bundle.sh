@@ -27,7 +27,8 @@ check_value CFBundleShortVersionString "$expected_version"
 check_value CFBundleVersion "$expected_build"
 
 executable="$(plutil -extract CFBundleExecutable raw -o - "$info")"
-if ! lipo -verify_arch arm64 x86_64 "$bundle/Contents/MacOS/$executable"; then
+architectures="$(lipo -archs "$bundle/Contents/MacOS/$executable")"
+if [[ " $architectures " != *" arm64 "* || " $architectures " != *" x86_64 "* ]]; then
     printf 'Expected both arm64 and x86_64 in %s.\n' "$executable" >&2
     exit 1
 fi

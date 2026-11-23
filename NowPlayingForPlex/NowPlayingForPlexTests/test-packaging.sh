@@ -80,6 +80,13 @@ plutil -insert CFBundleVersion -string "$expected_build" "$info"
 plutil -insert CFBundleExecutable -string "PlexWidget" "$info"
 plutil -create xml1 "$bundle_contents/Resources/PrivacyInfo.xcprivacy"
 touch "$bundle_contents/MacOS/PlexWidget"
+export PLEX_PACKAGING_TEST_ARCHS=arm64
+export PLEX_PACKAGING_TEST_LOG="$test_dir/incomplete-architectures.log"
+if bash "$project_dir/check-bundle.sh" "$test_dir/build/NowPlaying for Plex.app"; then
+    fail "The bundle check accepted an Apple Silicon-only executable."
+fi
+unset PLEX_PACKAGING_TEST_ARCHS
+
 export PLEX_RELEASE_SIGNING_IDENTITY="Test signing identity"
 export PLEX_RELEASE_NOTARY_PROFILE="test-notary-profile"
 export PLEX_PACKAGING_TEST_LOG="$test_dir/unsigned-app.log"
