@@ -77,29 +77,25 @@ Before starting development, set up your local environment:
 
 #### Prerequisites
 
-- **Xcode 14.0 or later**
-- **Swift 5.8 or later**
+- **Xcode 26.6 or later** with a Swift 6.2 or newer toolchain. CI uses Xcode 26.6.
 - **Git**
-- **macOS 13.0 or later**
+- A Mac running a version of macOS supported by your Xcode release
 
 #### Initial Setup
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/plex-desktop-widget.git
-   cd plex-desktop-widget
+   git clone https://github.com/YOUR_USERNAME/nowplaying-for-plex.git
+   cd nowplaying-for-plex
    ```
 
 3. **Add upstream remote** (to sync with original):
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_OWNER/plex-desktop-widget.git
+   git remote add upstream https://github.com/impactcrew/nowplaying-for-plex.git
    ```
 
-4. **Open in Xcode**:
-   ```bash
-   open PlexWidget/PlexWidget.xcodeproj
-   ```
+4. Open `NowPlayingForPlex/NowPlayingForPlex.xcodeproj` in Xcode and select the shared **PlexWidget** scheme.
 
 ### Development Workflow
 
@@ -151,27 +147,20 @@ refactor: simplify network request handling
 
 Before submitting, thoroughly test your changes:
 
-1. **Build the application**:
+1. **Run the native tests** from the repository root:
    ```bash
-   xcodebuild -scheme PlexWidget -configuration Debug
+   xcodebuild -project NowPlayingForPlex/NowPlayingForPlex.xcodeproj -scheme PlexWidget -destination 'platform=macOS' test
    ```
 
-2. **Run the app** and verify functionality:
-   - Test with your local Plex server
-   - Test with remote Plex server
-   - Verify playback controls work correctly
-   - Check UI responsiveness and layout
+2. Run the app against a Plex server and check onboarding, playback source selection, track changes, and all three widget layouts.
 
 3. **Test edge cases**:
-   - No Plex server available
-   - Invalid authentication token
-   - Network disconnection
-   - Long track names and artist names
-   - Rapid control clicks
+   - An unreachable server, invalid token and interrupted network connection
+   - Cancelling a server change while an existing connection is working
+   - Multiple active sessions, rapid track changes and long track names
+   - Settings navigation with the keyboard and disconnecting a display
 
-4. **Verify on both architectures** (if possible):
-   - Intel Mac
-   - Apple Silicon Mac
+4. Check changes to the release build on Intel and Apple Silicon wherever those Macs are available.
 
 ### Code Style Guide
 
@@ -249,24 +238,38 @@ func fetchPlaybackStatus(completion: @escaping (Result<PlaybackStatus, Error>) -
 
 ### Testing
 
-While formal unit tests aren't required for all contributions, please test:
+CI runs the `PlexWidget` test action, checks packaging success and cleanup with fake system tools, and inspects a universal Release bundle. Add a regression test for any changed playback, connection, or packaging behavior. The automated fixtures run without a Plex server or credentials.
 
-1. **Functionality**: Ensure your changes work as intended
-2. **Edge Cases**: Test with invalid inputs and error conditions
-3. **UI**: Check layout and behavior across screen sizes
-4. **Integration**: Test with actual Plex server if applicable
+Run the packaging fixtures from the repository root:
+
+```bash
+bash NowPlayingForPlex/NowPlayingForPlexTests/test-packaging.sh
+```
+
+## Direct-download releases
+
+1. Set the version and build number in `NowPlayingForPlex/ReleaseVersion.xcconfig`. Use a build number above the last release.
+2. Archive the `PlexWidget` scheme for **Any Mac** in Xcode. Use Organizer to export the app for **Direct Distribution** with a Developer ID Application identity and hardened runtime.
+3. Supply the signing identity in `PLEX_RELEASE_SIGNING_IDENTITY` and the saved notarization profile name in `PLEX_RELEASE_NOTARY_PROFILE`. Keep credential material in Keychain. For profile setup and distribution requirements, see [Apple's notarization guide](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+4. Build the release image on a Mac with Finder, the Xcode tools, and ImageMagick already available. Use the exported app as the input and an existing output directory.
+
+   ```bash
+   bash NowPlayingForPlex/create-dmg.sh --release "export/PlexWidget.app" "release/NowPlaying-for-Plex.dmg"
+   ```
+
+5. Test the resulting disk image on a clean Mac with Gatekeeper enabled before publishing it. Verify launch, Plex setup and music display on each supported architecture.
+
+The release command checks the app’s Developer ID signature and bundle metadata before packaging. It writes the output only after signing, notarizing, stapling and validating the disk image. The `--local` mode creates an image for local layout checks.
 
 ### Documentation in Code
 
 Help future maintainers by documenting complex logic:
 
 ```swift
-/// Handles playback control commands sent to the Plex server
-/// - Note: Uses MediaRemote framework for system integration
-/// - Parameters:
-///   - command: The control command (play, pause, next, previous)
-/// - Returns: True if command was successfully sent
-func sendPlaybackCommand(_ command: PlaybackCommand) -> Bool {
+/// Selects a music session to display.
+/// - Parameter sessions: The current sessions returned by the Plex server.
+/// - Returns: An eligible music session, or nil when none is available.
+func selectMusicSession(_ sessions: [PlexSession]) -> PlexSession? {
     // Implementation details...
 }
 ```
@@ -355,31 +358,18 @@ If applicable, add screenshots showing the changes.
 Understanding the project structure will help you navigate the codebase:
 
 ```
-plex-desktop-widget/
-├── PlexWidget/                 # Main Swift project
-│   ├── PlexWidget.xcodeproj   # Xcode project file
-│   └── Sources/
-│       ├── App.swift           # Application entry point
-│       ├── Models/             # Data models
-│       │   ├── PlaybackStatus.swift
-│       │   └── MediaItem.swift
-│       ├── Views/              # SwiftUI views
-│       │   ├── ContentView.swift
-│       │   ├── WidgetView.swift
-│       │   └── SettingsView.swift
-│       ├── Services/           # Business logic
-│       │   ├── PlexAPIService.swift
-│       │   ├── ConfigurationManager.swift
-│       │   └── MediaControlService.swift
-│       └── Utilities/          # Helper functions
-│           ├── Extensions.swift
-│           └── Constants.swift
-├── README.md                   # Main documentation
-├── CONTRIBUTING.md             # This file
-├── .github/
-│   ├── ISSUE_TEMPLATE/        # Issue templates
-│   └── workflows/              # CI/CD workflows (if any)
-└── .gitignore                  # Git ignore rules
+nowplaying-for-plex/
+├── NowPlayingForPlex/
+│   ├── NowPlayingForPlex.xcodeproj  # Shared PlexWidget scheme
+│   ├── NowPlayingForPlex/           # Swift app and assets
+│   ├── NowPlayingForPlexTests/      # XCTest and packaging fixtures
+│   ├── ReleaseVersion.xcconfig     # App version and build number
+│   ├── build.sh                    # Universal local build
+│   ├── check-bundle.sh             # Release bundle verification
+│   └── create-dmg.sh               # Direct-download disk image
+├── .github/workflows/              # Build and test checks
+├── README.md
+└── CONTRIBUTING.md
 ```
 
 ---

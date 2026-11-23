@@ -38,28 +38,29 @@
     </div>
   </header>
   <main class="shell">
-    <p><mark>Start with the release blockers.</mark> Repair packaging, credential handling and server changes in parallel. Then combine the playback and window fixes, run the regression suite, and inspect the bundle produced by the release build.</p>
+    <p><mark>All 12 repo repairs are in place.</mark> Packaging, connections and window behavior were fixed in parallel. The app code compiled for Apple Silicon and Intel, and the regression tests passed. The release checks at the bottom are still open.</p>
     <p><a href="review.html">Read the hostile repo review</a></p>
     <section>
-      <h2>To-do</h2>
+      <h2>Completed to-do</h2>
       <ol>
-        <li id="installer"><strong>Package into a private staging folder and detach only the disk image device created by that run.</strong><p>Exercise successful packaging and cleanup after an injected failure.</p></li>
-        <li id="distribution"><strong>Build a Developer ID signing and notarization path and replace the quarantine workaround in the install guide.</strong><p>Verify the release flow in isolation. A real signed release needs Apple credentials and a separate release check.</p></li>
-        <li id="transport"><strong>Protect Plex credentials in Keychain in all builds, require HTTPS for remote endpoints, and make local HTTP an explicit choice.</strong><p>Test URL policy, redirect boundaries and credential migration with fixtures.</p></li>
-        <li id="replacement"><strong>Keep the current Plex connection until the replacement validates and saves. Restore the working view on Cancel.</strong><p>Test failed writes and the cancel path. Confirm the active configuration persists.</p></li>
-        <li id="playback"><strong>Choose a playing music session consistently and let the user select a playback source.</strong><p>Test playing versus paused, reordered responses and a preferred source that has stopped.</p></li>
-        <li id="validation"><strong>Have setup and polling use the same Plex response validation.</strong><p>Distinguish valid empty sessions from unrelated or invalid responses.</p></li>
-        <li id="artwork"><strong>Cancel stale artwork work and prevent old images from replacing the current cover.</strong><p>Test out-of-order completion, idle playback and an image load failure.</p></li>
-        <li id="keyboard"><strong>Make settings keyboard reachable and return focus on dismissal.</strong><p>Check the window can become key and include Tab and Escape in the desktop smoke test.</p></li>
-        <li id="display"><strong>Keep the widget visible after monitor and layout changes and add Reset Position.</strong><p>Test saved coordinates on missing and secondary displays.</p></li>
-        <li id="bundle"><strong>Use Xcode for bundle versions and include the privacy manifest.</strong><p>Inspect the built bundle’s metadata, resources and both architecture slices.</p></li>
-        <li id="prototype"><strong>Retire the unsupported Electron prototype and ignore local credentials from older checkouts.</strong><p>Confirm the old entry point is gone and the credential file is excluded from Git.</p></li>
-        <li id="ci"><strong>Add a macOS build and test job with packaging and bundle checks. Align the build and contribution docs.</strong><p>Run the checks locally where available and keep hosted CI status explicit.</p></li>
+        <li id="installer"><strong>Stage each DMG privately and detach only the device created by that run.</strong><p>Packaging fixtures passed, including cleanup after partial attachment and layout failure.</p></li>
+        <li id="distribution"><strong>Add a Developer ID signing and notarization path and remove the quarantine workaround from the install guide.</strong><p>The isolated release test retained the previous image when signing or notarization failed.</p></li>
+        <li id="transport"><strong>Use Keychain in all builds and default Plex connections to HTTPS.</strong><p>Fixtures covered local HTTP opt-in, origin checks and migration from the previous credential stores.</p></li>
+        <li id="replacement"><strong>Keep the current Plex connection until the new one validates and saves.</strong><p>A failed-write fixture confirmed the original connection survives. The window’s Cancel path still needs an interactive check.</p></li>
+        <li id="playback"><strong>Prefer playing music and add a user or player picker.</strong><p>Fixtures covered reordered responses, paused sessions and an offline preferred source.</p></li>
+        <li id="validation"><strong>Have setup and polling use the same Plex response validation.</strong><p>The test accepted empty Plex sessions and rejected unrelated JSON and HTML.</p></li>
+        <li id="artwork"><strong>Cancel stale artwork requests and use a placeholder after a failed load.</strong><p>Fixtures covered out-of-order responses, idle playback, failures and cancellation.</p></li>
+        <li id="keyboard"><strong>Make settings a keyboard-capable window and restore focus on dismissal.</strong><p>Tab, Escape and focus return are part of the desktop check.</p></li>
+        <li id="display"><strong>Recover the widget after monitor and layout changes and add Reset Position.</strong><p>Geometry tests passed for disconnected displays, negative coordinates and positions already in view.</p></li>
+        <li id="bundle"><strong>Use one version source and include the privacy manifest in the app bundle.</strong><p>The bundle checker passed with a fixture. Xcode copied the manifest during the local build attempt.</p></li>
+        <li id="prototype"><strong>Retire the unsupported Electron prototype and ignore its old local credential filename.</strong><p>Git confirmed that the entry point is gone and the credential filename is ignored.</p></li>
+        <li id="ci"><strong>Add a macOS workflow with native tests, a universal build and packaging checks.</strong><p>The workflow parsed locally. The first hosted run remains open.</p></li>
       </ol>
     </section>
     <section>
-      <h2>Release check</h2>
-      <p>Check the app on a clean Mac with a Plex server, including the menu keyboard flow and a second display. Verify signing, notarization and launch from the exact DMG before publishing.</p>
+      <h2>Remaining release checks</h2>
+      <p>Run the hosted Xcode job and inspect the resulting universal bundle. The local Xcode test action stopped at sandbox restrictions on its working directory and macro service. A standalone XCTest runner compiled against the app source and passed all 18 tests.</p>
+      <p>Check the app on a clean Mac with a live Plex server and a second display. Include Change Server and Cancel, Tab and Escape in settings, and window recovery. Verify signing, notarization and launch from the exact DMG before publishing.</p>
     </section>
   </main>
 </body>

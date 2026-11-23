@@ -2,27 +2,10 @@ import SwiftUI
 import MediaPlayer
 
 struct ContentView: View {
-    @StateObject private var plexAPI: PlexAPI
+    @ObservedObject var plexAPI: PlexAPI
     @State private var mediaController = MediaRemoteController.shared
     @ObservedObject var settings: WidgetSettings
     @AppStorage("hasPlayedBefore") private var wasPlaying = false
-
-    init(settings: WidgetSettings) {
-        self.settings = settings
-        // Load configuration
-        if let config = ConfigManager.shared.loadConfig() {
-            _plexAPI = StateObject(wrappedValue: PlexAPI(
-                serverUrl: config.plexServerUrl,
-                token: config.plexToken
-            ))
-        } else {
-            // Fallback to empty API (will show error)
-            _plexAPI = StateObject(wrappedValue: PlexAPI(
-                serverUrl: "",
-                token: ""
-            ))
-        }
-    }
 
     var placeholderNowPlaying: NowPlaying {
         NowPlaying(
@@ -275,5 +258,5 @@ struct VisualEffectView: NSViewRepresentable {
 }
 
 #Preview {
-    ContentView(settings: WidgetSettings.shared)
+    ContentView(plexAPI: PlexAPI(serverUrl: "", token: ""), settings: WidgetSettings.shared)
 }

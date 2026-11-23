@@ -5,7 +5,7 @@ struct NowPlayingView: View {
     @ObservedObject var plexAPI: PlexAPI
     @ObservedObject var settings: WidgetSettings
 
-    @State private var albumImage: NSImage?
+    @StateObject private var artwork = AlbumArtwork()
     @State private var displayTime: Int = 0
     @State private var timer: Timer?
     @State private var titleOffset: CGFloat = 0
@@ -83,12 +83,18 @@ struct NowPlayingView: View {
             titleScrollTask?.cancel()
             subtitleScrollTask?.cancel()
         }
+        .task(id: nowPlaying.albumArtUrl) {
+            await artwork.load(url: nowPlaying.albumArtUrl) { url in
+                guard let data = await plexAPI.fetchAlbumArt(url: url) else { return nil }
+                return NSImage(data: data)
+            }
+        }
     }
 
     var overlayLayout: some View {
         ZStack(alignment: .leading) {
             // Album art positioned absolutely
-            AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
+            AlbumArtView(image: artwork.image)
                 .frame(width: 190, height: 190)
                 .clipped()  // Ensure content doesn't overflow
                 .clipShape(settings.albumArtShape == .circular ?
@@ -214,7 +220,7 @@ struct NowPlayingView: View {
     var sideLayout: some View {
         HStack(spacing: 0) {
             // Album art on the left - 140px (square to match height)
-            AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
+            AlbumArtView(image: artwork.image)
                 .frame(width: 140, height: 140)
                 .clipped()
                 .clipShape(
@@ -337,7 +343,7 @@ struct NowPlayingView: View {
     var miniLayout: some View {
         HStack(spacing: 0) {
             // Compact album art - 70px
-            AlbumArtView(url: nowPlaying.albumArtUrl, image: $albumImage, plexAPI: plexAPI)
+            AlbumArtView(image: artwork.image)
                 .frame(width: 70, height: 70)
                 .clipped()  // Ensure content doesn't overflow
                 .clipShape(settings.albumArtShape == .circular ?
@@ -579,10 +585,28 @@ struct NowPlayingView: View {
     }
 }
 
+@MainActor
+final class AlbumArtwork: ObservableObject {
+    @Published private(set) var image: NSImage?
+    private var latestRequest: UUID?
+
+    func load(url: String?, fetch: (String) async -> NSImage?) async {
+        guard !Task.isCancelled else { return }
+        let request = UUID()
+        latestRequest = request
+        guard let url else {
+            image = nil
+            return
+        }
+
+        let loadedImage = await fetch(url)
+        guard !Task.isCancelled, latestRequest == request else { return }
+        image = loadedImage
+    }
+}
+
 struct AlbumArtView: View {
-    let url: String?
-    @Binding var image: NSImage?
-    @ObservedObject var plexAPI: PlexAPI
+    let image: NSImage?
 
     var body: some View {
         GeometryReader { geometry in
@@ -641,38 +665,6 @@ struct AlbumArtView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-        }
-        .onAppear {
-            loadImage()
-        }
-        .onChange(of: url) { newUrl in
-            // If new URL exists, don't clear - let new image replace old one
-            // If URL is nil (playback stopped), clear immediately
-            if newUrl == nil {
-                image = nil
-            } else {
-                loadImage()
-            }
-        }
-    }
-
-    private func loadImage() {
-        guard let urlString = url else {
-            // Clear image if URL is nil (track ended or no artwork)
-            image = nil
-            return
-        }
-
-        // Use PlexAPI's secure method to fetch album art with token in header
-        Task {
-            if let data = await plexAPI.fetchAlbumArt(url: urlString),
-               let nsImage = NSImage(data: data) {
-                await MainActor.run {
-                    // Only update once new artwork loads - keeps old artwork visible during transitions
-                    self.image = nsImage
-                }
-            }
-            // Note: If fetch fails, we keep the old image visible rather than clearing it
         }
     }
 }

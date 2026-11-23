@@ -1,14 +1,27 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    @State private var serverUrl: String = ""
-    @State private var token: String = ""
-    @State private var isValidating: Bool = false
-    @State private var errorMessage: String? = nil
+    @State private var serverUrl: String
+    @State private var token = ""
+    @State private var allowsLocalHTTP: Bool
+    @State private var validationTask: Task<Void, Never>?
+    @State private var errorMessage: String?
     @FocusState private var focusedField: Field?
 
     let onComplete: (String, String) -> Void
-    var onClose: (() -> Void)? = nil
+    let onClose: (() -> Void)?
+
+    init(
+        onComplete: @escaping (String, String) -> Void,
+        onClose: (() -> Void)? = nil,
+        initialServerURL: String = "",
+        initialAllowsLocalHTTP: Bool = false
+    ) {
+        self.onComplete = onComplete
+        self.onClose = onClose
+        _serverUrl = State(initialValue: initialServerURL)
+        _allowsLocalHTTP = State(initialValue: initialAllowsLocalHTTP)
+    }
 
     enum Field: Hashable {
         case serverUrl
@@ -18,7 +31,7 @@ struct OnboardingView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 20) {
                     // Header
                     VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
@@ -92,7 +105,7 @@ struct OnboardingView: View {
                     InstructionStep(
                         number: 2,
                         title: "Enter your Plex Server URL",
-                        description: "Usually http://localhost:32400 or your server's IP address"
+                        description: "Use HTTPS. On a trusted local network, you can allow unencrypted HTTP below."
                     )
                 }
 
@@ -138,7 +151,7 @@ struct OnboardingView: View {
                             .foregroundColor(.white.opacity(0.9))
 
                         TransparentTextField(
-                            placeholder: "http://localhost:32400",
+                            placeholder: "https://plex.example.com:32400",
                             text: $serverUrl,
                             isFocused: focusedField == .serverUrl
                         )
@@ -160,14 +173,19 @@ struct OnboardingView: View {
                         )
                         .focused($focusedField, equals: .serverUrl)
                         .accessibilityLabel("Server URL")
-                        .accessibilityHint("Enter your Plex server URL, usually http://localhost:32400")
-                        .onSubmit {
-                            if isFormValid {
-                                validateAndSave()
-                            }
-                        }
+                        .accessibilityHint("Enter your Plex server address")
+                        .onSubmit(validateAndSave)
+
+                        Toggle("Allow HTTP on my local network", isOn: $allowsLocalHTTP)
+                            .toggleStyle(.checkbox)
+                            .tint(Color(red: 229/255, green: 160/255, blue: 13/255))
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.9))
+                            .help("HTTP sends your Plex token without encryption. Use it only on a network you trust.")
+                            .accessibilityHint("HTTP sends your Plex token without encryption.")
                     }
                 }
+                .disabled(isValidating)
 
                 // Error message
                 if let errorMessage = errorMessage {
@@ -176,15 +194,10 @@ struct OnboardingView: View {
                             .foregroundColor(Color(red: 255/255, green: 100/255, blue: 100/255))
                             .accessibilityHidden(true)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(errorMessage)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white.opacity(0.95))
-
-                            Text("Please check your server URL and token, then try again.")
-                                .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.85))
-                        }
+                        Text(errorMessage)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.95))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -195,7 +208,7 @@ struct OnboardingView: View {
                             .stroke(Color.red.opacity(0.4), lineWidth: 1)
                     )
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Error: \(errorMessage). Please check your server URL and token, then try again.")
+                    .accessibilityLabel(errorMessage)
                     .transition(.asymmetric(
                         insertion: .scale.combined(with: .opacity),
                         removal: .opacity
@@ -273,6 +286,7 @@ struct OnboardingView: View {
 
             // Close button (overlay on top-right)
             Button(action: {
+                validationTask?.cancel()
                 onClose?()
             }) {
                 Image(systemName: "xmark")
@@ -293,165 +307,59 @@ struct OnboardingView: View {
             .padding([.top, .trailing], 16)
             .accessibilityLabel("Close")
         }
+        .onDisappear {
+            validationTask?.cancel()
+        }
+    }
+
+    private var isValidating: Bool {
+        validationTask != nil
     }
 
     private var isFormValid: Bool {
-        !serverUrl.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !token.trimmingCharacters(in: .whitespaces).isEmpty &&
-        isValidUrl(serverUrl.trimmingCharacters(in: .whitespaces)) &&
-        isValidToken(token.trimmingCharacters(in: .whitespaces))
-    }
-
-    // MARK: - Security Validation
-
-    /// Validates URL format - only allows http/https protocols with valid format
-    private func isValidUrl(_ urlString: String) -> Bool {
-        guard let url = URL(string: urlString) else { return false }
-
-        // Must have a scheme
-        guard let scheme = url.scheme?.lowercased() else { return false }
-
-        // Only allow http and https protocols
-        guard scheme == "http" || scheme == "https" else { return false }
-
-        // Must have a host
-        guard let host = url.host, !host.isEmpty else { return false }
-
-        // Additional validation: host should not contain spaces or invalid characters
-        let hostCharacterSet = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-")
-        guard host.unicodeScalars.allSatisfy({ hostCharacterSet.contains($0) }) else {
-            return false
-        }
-
-        return true
-    }
-
-    /// Validates Plex token format - alphanumeric, 15-25 characters
-    private func isValidToken(_ tokenString: String) -> Bool {
-        // Plex tokens are typically 20 characters, alphanumeric
-        // Allow range of 15-25 to accommodate potential variations
-        let tokenLength = tokenString.count
-        guard tokenLength >= 15 && tokenLength <= 25 else { return false }
-
-        // Must be alphanumeric only
-        let alphanumericSet = CharacterSet.alphanumerics
-        return tokenString.unicodeScalars.allSatisfy { alphanumericSet.contains($0) }
+        !serverUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func validateAndSave() {
-        guard isFormValid else { return }
-
-        // Dismiss keyboard
+        guard isFormValid, !isValidating else { return }
         focusedField = nil
-
-        // Clear previous error with animation
-        withAnimation(.easeOut(duration: 0.2)) {
-            errorMessage = nil
+        errorMessage = nil
+        let cleanToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanToken.unicodeScalars.allSatisfy({ (33...126).contains($0.value) }) else {
+            errorMessage = "Paste the Plex token without spaces."
+            return
         }
-        isValidating = true
-
-        // Clean up inputs
-        let cleanUrl = serverUrl.trimmingCharacters(in: .whitespaces)
-        let cleanToken = token.trimmingCharacters(in: .whitespaces)
-
-        // CRITICAL FIX: Do NOT use autoreleasepool - it conflicts with Task execution
-        // The actual issue was calling onComplete() inside the MainActor block
-        // while still inside the autoreleasepool. This caused double-free crashes.
-        // Solution: Call async validation without autoreleasepool wrapping.
-        Task {
-            print("DEBUG Onboarding: Testing connection to \(cleanUrl)")
-
-            // Create test API instance and validate connection
-            // Network I/O happens on background thread
-            let testResult = await validatePlexConnection(serverUrl: cleanUrl, token: cleanToken)
-
-            print("DEBUG Onboarding: Validation result - success: \(testResult.success), error: \(testResult.error ?? "nil")")
-
-            // Now switch to MainActor for UI updates only
-            await MainActor.run {
-                if let error = testResult.error {
-                    // Connection failed - show error with animation
-                    print("DEBUG Onboarding: Connection failed with error: \(error)")
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                        errorMessage = error
-                        isValidating = false
-                    }
-                } else {
-                    // Success! Save the config
-                    print("DEBUG Onboarding: Connection successful, saving config")
-                    if ConfigManager.shared.saveConfig(serverUrl: cleanUrl, token: cleanToken) {
-                        // Stop the spinner before transitioning
-                        isValidating = false
-                        // Call onComplete - the app delegate handles proper timing for window closure
-                        self.onComplete(cleanUrl, cleanToken)
-                    } else {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            errorMessage = "Failed to save configuration"
-                            isValidating = false
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Validates Plex server connection by performing a test API call
-    /// Returns a tuple with success status and optional error message
-    /// NOTE: This function performs network I/O and should NOT run on MainActor
-    private func validatePlexConnection(serverUrl: String, token: String) async -> (success: Bool, error: String?) {
-        guard let url = URL(string: "\(serverUrl)/status/sessions") else {
-            return (false, "Invalid server URL format")
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue(token, forHTTPHeaderField: "X-Plex-Token")
-        request.setValue("plex-desktop-widget-validation", forHTTPHeaderField: "X-Plex-Client-Identifier")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 10.0
-
+        let address: PlexServerAddress
+        let allowHTTP = allowsLocalHTTP
         do {
-            // Perform network call on background thread (not MainActor)
-            // This prevents crashes during URLSession SSL handshake and DNS resolution
-            let (_, response) = try await URLSession.shared.data(for: request)
+            address = try PlexServerAddress(serverUrl, allowsLocalHTTP: allowHTTP)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
 
-            guard let httpResponse = response as? HTTPURLResponse else {
-                return (false, "Invalid response from server")
-            }
-
-            switch httpResponse.statusCode {
-            case 200:
-                return (true, nil)
-            case 401:
-                return (false, "Invalid Plex token - authentication failed")
-            case 404:
-                return (false, "Server endpoint not found - check your server URL")
-            case 500...599:
-                return (false, "Server error (\(httpResponse.statusCode))")
-            default:
-                return (false, "Unexpected server response (\(httpResponse.statusCode))")
-            }
-        } catch let error as NSError {
-            // Handle specific network errors
-            if error.domain == NSURLErrorDomain {
-                switch error.code {
-                case NSURLErrorTimedOut:
-                    return (false, "Connection timed out - server may be unreachable")
-                case NSURLErrorCannotConnectToHost, NSURLErrorCannotFindHost:
-                    return (false, "Cannot connect to server - check URL and network")
-                case NSURLErrorNetworkConnectionLost:
-                    return (false, "Network connection lost")
-                case NSURLErrorNotConnectedToInternet:
-                    return (false, "No internet connection - check your network")
-                case NSURLErrorSecureConnectionFailed:
-                    return (false, "SSL connection failed - use http:// instead of https://")
-                case NSURLErrorServerCertificateUntrusted:
-                    return (false, "Server certificate untrusted - check server URL")
-                default:
-                    // Show error code for debugging
-                    return (false, "Network error (code \(error.code)): \(error.localizedDescription)")
+        validationTask = Task { @MainActor in
+            defer { validationTask = nil }
+            do {
+                let client = PlexClient(address: address, token: cleanToken, clientIdentifier: "plex-desktop-widget-validation")
+                _ = try await client.sessions()
+                try Task.checkCancellation()
+                let cleanURL = address.url.absoluteString
+                guard ConfigManager.shared.saveConfig(serverUrl: cleanURL, token: cleanToken, allowsLocalHTTP: address.url.scheme == "http") else {
+                    errorMessage = "Your Plex connection could not be saved. Check Keychain access and try again."
+                    return
+                }
+                onComplete(cleanURL, cleanToken)
+            } catch let error as URLError where [.secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot].contains(error.code) {
+                if !Task.isCancelled {
+                    errorMessage = "Check the server address and its HTTPS certificate, then try again."
+                }
+            } catch {
+                if !Task.isCancelled {
+                    errorMessage = error.localizedDescription
                 }
             }
-            return (false, "Connection failed: \(error.localizedDescription)")
         }
     }
 }
@@ -544,6 +452,7 @@ struct TransparentTextField: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSTextField, context: Context) {
+        nsView.isEnabled = context.environment.isEnabled
         // Only update if not currently editing (prevents interference with field editor)
         if nsView.currentEditor() == nil {
             nsView.stringValue = text
@@ -625,6 +534,7 @@ struct TransparentSecureField: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSSecureTextField, context: Context) {
+        nsView.isEnabled = context.environment.isEnabled
         // Only update if not currently editing (prevents interference with field editor)
         if nsView.currentEditor() == nil {
             nsView.stringValue = text
@@ -702,7 +612,5 @@ struct TransparentTextFieldStyled<Field: View>: View {
 }
 
 #Preview {
-    OnboardingView { serverUrl, token in
-        print("Configured: \(serverUrl), \(token)")
-    }
+    OnboardingView(onComplete: { _, _ in })
 }
