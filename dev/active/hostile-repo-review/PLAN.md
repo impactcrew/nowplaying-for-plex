@@ -15,3 +15,5 @@ All 12 repository items are implemented. The standalone XCTest runner passed 18 
 ## Test build feedback
 
 Preserve the older app's Keychain item and server address through migration, and distinguish read failures from first-run setup. Make the widget card and setup header draggable through AppKit. Rebuild with the app's normal sandbox entitlements and package with the approved disk image design. Verify the app bundle and disk image before replacing the test download link.
+
+Build 5 is in `testing/NowPlaying-for-Plex-1.3.0-5-test.dmg`. All 23 app tests and the packaging tests passed. Disk-image readback matched the signed universal app and the original background, volume icon and Finder layout. Actual Keychain recovery, dragging and Finder rendering remain desktop checks.

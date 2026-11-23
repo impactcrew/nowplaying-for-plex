@@ -114,4 +114,20 @@ export PLEX_PACKAGING_TEST_LOG="$test_dir/release.log"
 run_package --release || fail "A verified and stapled image should be published."
 [[ "$(cat "$test_dir/preview.dmg")" == "signed and stapled release" ]] || fail "The published image was different from the verified image."
 
+export PLEX_PACKAGING_TEST_LOG="$test_dir/unsigned-test.log"
+if run_package --test; then
+    fail "Offline packaging should reject an unsigned app bundle."
+fi
+if grep -q '^hdiutil ' "$PLEX_PACKAGING_TEST_LOG"; then
+    fail "Offline packaging touched disk images before checking the app signature files."
+fi
+mkdir "$bundle_contents/_CodeSignature"
+printf '%s\n' "signature fixture" > "$bundle_contents/_CodeSignature/CodeResources"
+
+export PLEX_PACKAGING_TEST_LOG="$test_dir/offline-test.log"
+run_package --test || fail "Offline packaging did not include the Finder layout and artwork."
+if grep -E '^(hdiutil (attach|detach) |osascript |codesign |xcrun notarytool )' "$PLEX_PACKAGING_TEST_LOG"; then
+    fail "Offline packaging should use neither Finder nor the disk-mount or signing services."
+fi
+
 printf '%s\n' "Packaging, cleanup and release gating passed."
