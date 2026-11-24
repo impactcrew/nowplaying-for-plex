@@ -4,7 +4,7 @@ Last updated 2026-11-24.
 
 ## Next
 
-- [ ] Check whether signing is available and use the 1.3.1 build 6 archive to produce the signed, notarized `NowPlaying-for-Plex.dmg`. Signing access was being prepared at handover. The signing tool was unavailable in this session.
+- [ ] Produce `NowPlaying-for-Plex.dmg` from an app signed with the project's entitlements. Zeal signing access now works, but its output from the unsigned archive lacks the app's sandbox and outgoing network entitlements. Confirm both in the signed app before packaging and signing the DMG.
 - [ ] Confirm a passing GitHub Actions macOS run for the release revision.
 - [ ] Open the exact signed DMG on a clean Mac with Gatekeeper enabled. Confirm the Finder layout, first-time Plex setup and live music display, widget and setup window dragging, Reset Position, Tab and Escape, and the orange On and grey Off launch-at-login switch. Check display recovery by unplugging a monitor. Runtime checks on Intel and macOS 13 are still open.
 - [ ] Upgrade a working public v1.3.0 install with the final signed app and confirm Plex stays signed in.
@@ -16,6 +16,7 @@ Last updated 2026-11-24.
 - The current release candidate is **1.3.1 build 6** at app revision `94c162c`. Reset Position sits beside Layout Style and was checked in two SwiftUI previews. Xcode 27.2 built the [unsigned app](../NowPlayingForPlex/build/1.3.1-6/PlexWidget.app) and [unsigned archive](../NowPlayingForPlex/build/1.3.1-6/NowPlaying-for-Plex.xcarchive). The archived app passed the version, privacy manifest, and Intel and Apple Silicon checks. All 23 standalone app tests and the packaging tests passed.
 - Xcode compiled the app-hosted test bundle with signing disabled. The local run stopped before executing tests because the session could not connect to the macOS test runner service. The GitHub Actions run remains pending.
 - The [1.3.1 release notes](active/hostile-repo-review/v1.3.1-release-notes.md) are prepared for the GitHub release.
+- Zeal signed, notarized and stapled a [copy of 1.3.1 build 6](../NowPlayingForPlex/build/1.3.1-6/NowPlaying%20for%20Plex.app). Inspection found no entitlement section in either executable slice. The installed build 5 contains the expected entitlements in both slices. Xcode's normal local signing step returned “Operation not permitted” in this session. The signed copy is diagnostic and the release DMG is still pending.
 - [NowPlaying for Plex 1.3.0 build 5](active/hostile-repo-review/testing/NowPlaying-for-Plex-1.3.0-5-test.dmg) remains available as the ad hoc test installer. Security framework checks confirmed its signatures, sandbox and outgoing network entitlements. The disk-image checksum and offline readback confirmed the app, original background, Finder layout and volume icon. Interactive installer checks are tracked above for the final signed DMG.
 - The installed app sampled in this session was 1.3.0 build 5. Over 60 seconds it averaged 0.008% of one core, peaked at 0.022% in a one-second interval, and held about 32 MiB of memory. Playback state was unverified.
 
