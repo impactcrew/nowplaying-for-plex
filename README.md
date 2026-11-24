@@ -3,10 +3,10 @@
 
   # NowPlaying for Plex
 
-  ![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)
-  ![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
-  ![Swift](https://img.shields.io/badge/Swift-6.2%2B-orange.svg)
-  ![License](https://img.shields.io/badge/license-MIT-green.svg)
+  [![Latest GitHub release](https://img.shields.io/github/v/release/impactcrew/nowplaying-for-plex?style=flat-square&label=Release&labelColor=30231e&color=8c5416&logo=github&logoColor=ffc95b)](https://github.com/impactcrew/nowplaying-for-plex/releases/latest)
+  [![macOS 13 or later](https://img.shields.io/badge/macOS%2013%2B-30231e?style=flat-square&logo=apple&logoColor=white)](#requirements)
+  [![Swift 6.2 or later](https://img.shields.io/badge/Swift%206.2%2B-30231e?style=flat-square&logo=swift&logoColor=white)](#building-from-source)
+  [![MIT License](https://img.shields.io/badge/MIT-30231e?style=flat-square)](LICENSE)
 </div>
 
 A Swift macOS menu bar app that shows the music playing on your Plex server, with album art and track details in a floating widget. The widget displays playback information. Use your Plex player to control playback. The macOS app is the maintained version of this project.
