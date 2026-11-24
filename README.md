@@ -14,18 +14,18 @@ A Swift macOS menu bar app that shows the music playing on your Plex server, wit
 ![NowPlaying for Plex widget showing album art and track details](Screenshot.png)
 
 ### Onboarding
-<img src="Onboarding 2.webp" alt="Onboarding screen">
+<img src="Onboarding 2.webp" alt="First-run setup with the Amber app icon" width="568">
 
 ### Customization Options
 <img src="Player.webp" alt="Widget player modes">
 
 ### Settings Panel
-<img src="Settings.webp" alt="Settings panel">
+<img src="Settings.webp" alt="Settings panel beneath the five-bar menu bar icon" width="328">
 
 ## Features
 
 - **Mini mode** - A compact option for smaller screens
-- **Menu Bar Integration** - Menu bar icon with Plex chevron for quick access to settings
+- **Menu Bar Integration** - Five-bar icon for quick access to settings
 - **Beautiful Album Art** - Displays high-quality album artwork with customizable shapes (square, rounded, circle)
 - **Smooth Track Transitions** - Album art persists during track changes for seamless playback experience
 - **Playback source** - Follow a Plex user or player, or let the widget select an active music session
@@ -58,7 +58,7 @@ On first launch, the widget will guide you through a simple onboarding process:
 
 1. **Server URL** - Enter your Plex server address. HTTPS is the default. For a trusted local server that only serves HTTP, enter the full `http://` URL and enable **Allow HTTP on my local network**. Remote connections require HTTPS.
 2. **Authentication Token** - Provide your Plex authentication token
-3. **Local network** - Allow the app to connect if macOS asks for local network access.
+3. **Local network** - Allow access if macOS asks. To change that choice later, open **System Settings > Privacy & Security > Local Network**. [Apple's Local Network guide](https://support.apple.com/en-gb/guide/mac-help/mchla4f49138/mac)
 
 To get your Plex token, see [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
 
