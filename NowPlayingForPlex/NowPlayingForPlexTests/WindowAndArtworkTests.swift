@@ -89,6 +89,32 @@ final class WindowAndArtworkTests: XCTestCase {
     }
 
     @MainActor
+    func testShortTitleDoesNotRepeatAfterAnOverflowingTitle() {
+        let font = NSFont.systemFont(ofSize: 20, weight: .semibold)
+        let previous = PlaybackMarquee(
+            text: "A long track title that will run out of room in the widget",
+            font: font, color: .primary, isPlaying: true, pointsPerSecond: 50
+        )
+        let next = PlaybackMarquee(text: "Silence", font: font, color: .primary, isPlaying: true, pointsPerSecond: 50)
+
+        XCTAssertNotNil(previous.scrollDistance(in: 320))
+        XCTAssertNil(next.scrollDistance(in: 320))
+    }
+
+    @MainActor
+    func testMiniPlaybackLineScrollsOnlyWhilePlayingAndOnlyWhenItOverflows() {
+        let font = NSFont.systemFont(ofSize: 11)
+        let text = "WITH U · Kontor Sunset Chill 2026"
+        let playing = PlaybackMarquee(text: text, font: font, color: .primary, isPlaying: true, pointsPerSecond: 40)
+        let paused = PlaybackMarquee(text: text, font: font, color: .primary, isPlaying: false, pointsPerSecond: 40)
+
+        XCTAssertNotNil(playing.scrollDistance(in: 100))
+        XCTAssertNil(playing.scrollDistance(in: 220))
+        XCTAssertNil(playing.scrollDistance(in: 0))
+        XCTAssertNil(paused.scrollDistance(in: 100))
+    }
+
+    @MainActor
     func testLateArtworkCannotReplaceNewerCover() async {
         let artwork = AlbumArtwork()
         let oldCover = NSImage(size: NSSize(width: 10, height: 10))
