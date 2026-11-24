@@ -5,7 +5,6 @@ Last updated 2026-11-24.
 ## Next
 
 - [ ] Confirm a passing GitHub Actions macOS run for the release revision.
-- [ ] On build 9, drag the widget near the Dock, quit, and reopen. Confirm the widget returns to the same spot before publishing to GitHub.
 - [ ] Open the exact signed DMG on a clean Mac with Gatekeeper enabled. Confirm the Finder layout, first-time Plex setup and live music display, widget and setup window dragging, Reset Position, Tab and Escape, and the orange On and grey Off launch-at-login switch. Check display recovery by unplugging a monitor. Runtime checks on Intel and macOS 13 are still open.
 - [ ] Upgrade a working public v1.3.0 install with the final signed app and confirm Plex stays signed in.
 - [ ] Check whether the removed integration still appears in the repository contributors list. This is a separate, older task.
@@ -15,7 +14,7 @@ Last updated 2026-11-24.
 - All 12 review fixes and the build 4 feedback are implemented. Local branch `fix/widget-window-border` contains the app changes at `91db731` and the installer changes at `9c9b471`. No push or release took place.
 - The current release candidate is **1.3.1 build 9** at app revision `0fbfd40`. Startup preserves a saved position when the widget is reachable, including near the Dock and screen edges, and brings it back into view if its display is disconnected. Build 8 reproduced both edge-placement failures in automated tests. All 26 regression tests passed on build 9, along with the five-bar menu icon rendering check and the packaging fixtures. The [archive](../NowPlayingForPlex/build/1.3.1-9/NowPlaying-for-Plex.xcarchive) passed version, privacy manifest, and Intel and Apple Silicon checks.
 - Zeal signed, notarized and stapled the [build 9 app](../NowPlayingForPlex/build/1.3.1-9/NowPlaying%20for%20Plex.app) and the [build 9 installer](../NowPlayingForPlex/build/1.3.1-9/NowPlaying-for-Plex.dmg). Gatekeeper accepted both. All seven app permissions matched on both architectures. The disk checksum passed, the Finder background reference matched, and the signed disk contents were identical to the verified image from before signing. The SHA-256 is `59a9d2df94f01be94a2c62eb7ddca8e618185d86da16645d96667e91b0798f31`.
-- The first [README screenshot](../Screenshot.png) above Onboarding uses the supplied replacement image. GitHub publishing is on hold while the position fix is checked on the user's Mac.
+- The user confirmed that build 9 restores the widget to the saved position after restarting. The first [README screenshot](../Screenshot.png) above Onboarding uses the supplied replacement image.
 - Build 8 introduced matching five-bar app and menu bar icons and used the approved Mist blue Record sleeve installer with the curved Record arc.
 - Zeal signed, notarized and stapled the [build 8 app](../NowPlayingForPlex/build/1.3.1-8/NowPlaying%20for%20Plex.app) and the [build 8 installer](../NowPlayingForPlex/build/1.3.1-8/NowPlaying-for-Plex.dmg). Gatekeeper accepted both. All seven app permissions matched on both architectures. The disk checksum passed, and the signed disk contents matched the verified image from before signing. The Finder background reference still resolves to the packaged artwork. The SHA-256 is `798e7849db5e2a3350ddbfdc9e859be9f7a16cc3cfd5385790f1c5f87a2ffc42`.
 - Build 7 used three bars in the menu bar.
