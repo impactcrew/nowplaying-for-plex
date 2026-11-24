@@ -40,7 +40,7 @@ final class WindowAndArtworkTests: XCTestCase {
         let primary = CGRect(x: 0, y: 40, width: 1440, height: 820)
         let savedFrame = CGRect(x: 1850, y: 40, width: 592, height: 232)
 
-        let restored = WidgetWindowPlacement.visibleFrame(savedFrame, screens: [primary])
+        let restored = WidgetWindowPlacement.restoredFrame(savedFrame, screens: [primary])
 
         XCTAssertTrue(primary.contains(restored))
         XCTAssertEqual(restored.origin, CGPoint(x: 828, y: 60))
@@ -61,7 +61,31 @@ final class WindowAndArtworkTests: XCTestCase {
         let screen = CGRect(x: 0, y: 40, width: 1440, height: 820)
         let original = CGRect(x: 25, y: 76, width: 592, height: 232)
 
-        XCTAssertEqual(WidgetWindowPlacement.visibleFrame(original, screens: [screen]), original)
+        XCTAssertEqual(WidgetWindowPlacement.restoredFrame(original, screens: [screen]), original)
+    }
+
+    func testWidgetRestoresADraggedPositionNearTheDock() {
+        let screen = CGRect(x: 0, y: 60, width: 1440, height: 820)
+        let savedFrame = CGRect(x: 800, y: 24, width: 592, height: 232)
+
+        XCTAssertEqual(WidgetWindowPlacement.restoredFrame(savedFrame, screens: [screen]), savedFrame)
+    }
+
+    func testWidgetRestoresADraggedPositionAtTheEdgeOfASecondaryDisplay() {
+        let primary = CGRect(x: 0, y: 40, width: 1440, height: 820)
+        let secondary = CGRect(x: -1920, y: 24, width: 1920, height: 1056)
+        let savedFrame = CGRect(x: -1944, y: 62, width: 592, height: 232)
+
+        XCTAssertEqual(WidgetWindowPlacement.restoredFrame(savedFrame, screens: [primary, secondary]), savedFrame)
+    }
+
+    func testWidgetWithOnlyAnEdgeOnScreenIsMovedIntoReach() {
+        let screen = CGRect(x: 0, y: 60, width: 1440, height: 820)
+        let savedFrame = CGRect(x: 1436, y: 72, width: 592, height: 232)
+
+        let restored = WidgetWindowPlacement.restoredFrame(savedFrame, screens: [screen])
+
+        XCTAssertTrue(screen.contains(restored))
     }
 
     @MainActor

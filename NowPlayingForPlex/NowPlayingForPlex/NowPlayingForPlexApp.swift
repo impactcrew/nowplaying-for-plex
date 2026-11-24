@@ -181,7 +181,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let widgetWindow = NSWindow(
-            contentRect: WidgetWindowPlacement.visibleFrame(frame, screens: screens),
+            contentRect: WidgetWindowPlacement.restoredFrame(frame, screens: screens),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -229,27 +229,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let window else { return }
         let size = windowSizeForLayout(layout)
         let frame = window.frame
+        let resizedFrame = CGRect(x: frame.maxX - size.width, y: frame.minY, width: size.width, height: size.height)
         positionWidget(
-            at: CGRect(x: frame.maxX - size.width, y: frame.minY, width: size.width, height: size.height),
+            at: WidgetWindowPlacement.visibleFrame(resizedFrame, screens: visibleScreenFrames),
             animate: true
         )
     }
 
     @objc private func screenParametersDidChange() {
         guard let window else { return }
-        positionWidget(at: window.frame)
+        positionWidget(at: WidgetWindowPlacement.restoredFrame(window.frame, screens: visibleScreenFrames))
     }
 
     private func resetWidgetPosition() {
-        positionWidget(at: WidgetWindowPlacement.defaultFrame(
+        let screens = visibleScreenFrames
+        let frame = WidgetWindowPlacement.defaultFrame(
             size: windowSizeForLayout(settings.layoutStyle),
-            on: visibleScreenFrames.first
-        ), animate: true)
+            on: screens.first
+        )
+        positionWidget(at: WidgetWindowPlacement.visibleFrame(frame, screens: screens), animate: true)
     }
 
-    private func positionWidget(at proposedFrame: CGRect, animate: Bool = false) {
+    private func positionWidget(at frame: CGRect, animate: Bool = false) {
         guard let window else { return }
-        let frame = WidgetWindowPlacement.visibleFrame(proposedFrame, screens: visibleScreenFrames)
         if window.frame != frame {
             window.setFrame(frame, display: true, animate: animate)
         }
@@ -365,6 +367,15 @@ enum WidgetWindowPlacement {
             width: size.width,
             height: size.height
         )
+    }
+
+    static func restoredFrame(_ frame: CGRect, screens: [CGRect]) -> CGRect {
+        // The transparent margins can extend beyond the usable desktop after a drag.
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        if screens.contains(where: { $0.contains(center) }) {
+            return frame
+        }
+        return visibleFrame(frame, screens: screens)
     }
 
     static func visibleFrame(_ frame: CGRect, screens: [CGRect]) -> CGRect {
