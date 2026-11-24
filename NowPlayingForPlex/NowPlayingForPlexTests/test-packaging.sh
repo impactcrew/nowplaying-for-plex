@@ -10,7 +10,7 @@ export PLEX_PACKAGING_TEST_ROOT="$test_dir"
 export PATH="$test_dir/bin:$PATH"
 mkdir -p "$test_dir/bin" "$test_dir/build/NowPlaying for Plex.app"
 
-for tool in hdiutil ditto convert SetFile chflags defaults killall sleep sync sips DeRez Rez osascript codesign xcrun spctl lipo; do
+for tool in hdiutil ditto convert SetFile chflags defaults killall sleep sync sips DeRez Rez osascript codesign xcrun spctl lipo xattr; do
     ln -s "$project_dir/NowPlayingForPlexTests/packaging-tool.sh" "$test_dir/bin/$tool"
 done
 
@@ -110,6 +110,20 @@ if grep -q '^xcrun stapler ' "$PLEX_PACKAGING_TEST_LOG"; then
 fi
 
 unset PLEX_PACKAGING_TEST_FAIL_NOTARIZATION
+export PLEX_PACKAGING_TEST_FAIL_MOUNTED_SIGNATURE=1
+export PLEX_PACKAGING_TEST_LOG="$test_dir/invalid-packaged-app.log"
+if run_package --release; then
+    fail "Release packaging accepted a finished image with an invalid app signature."
+fi
+[[ "$(cat "$test_dir/preview.dmg")" == "previous image" ]] || fail "Invalid app signature replaced the previous image."
+if compgen -G "$test_dir/.plex-dmg.*" > /dev/null; then
+    fail "Staging was not removed after the finished image failed signature verification."
+fi
+if grep -Eq '^(codesign --sign |xcrun notarytool )' "$PLEX_PACKAGING_TEST_LOG"; then
+    fail "An image with an invalid app signature reached release signing."
+fi
+
+unset PLEX_PACKAGING_TEST_FAIL_MOUNTED_SIGNATURE
 export PLEX_PACKAGING_TEST_LOG="$test_dir/release.log"
 run_package --release || fail "A verified and stapled image should be published."
 [[ "$(cat "$test_dir/preview.dmg")" == "signed and stapled release" ]] || fail "The published image was different from the verified image."
