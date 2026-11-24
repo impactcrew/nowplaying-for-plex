@@ -60,10 +60,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusBarItem?.button {
             let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
                 NSColor.black.setFill()
-                let barHeights: [CGFloat] = [10, 16, 12]
+                let barHeights: [CGFloat] = [8, 14, 8, 12, 6]
                 for (index, height) in barHeights.enumerated() {
-                    let bar = NSRect(x: 1 + 6 * CGFloat(index), y: (18 - height) / 2, width: 4, height: height)
-                    NSBezierPath(roundedRect: bar, xRadius: 1, yRadius: 1).fill()
+                    let bar = NSRect(x: 4 * CGFloat(index), y: (18 - height) / 2, width: 2, height: height)
+                    NSBezierPath(roundedRect: bar, xRadius: 0.5, yRadius: 0.5).fill()
                 }
                 return true
             }
