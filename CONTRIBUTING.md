@@ -251,13 +251,13 @@ bash NowPlayingForPlex/NowPlayingForPlexTests/test-packaging.sh
 1. Set the version and build number in `NowPlayingForPlex/ReleaseVersion.xcconfig`. Use a build number above the last release.
 2. Archive the `PlexWidget` scheme for **Any Mac** in Xcode. Use Organizer to export the app for **Direct Distribution** with a Developer ID Application identity and hardened runtime.
 3. Supply the signing identity in `PLEX_RELEASE_SIGNING_IDENTITY` and the saved notarization profile name in `PLEX_RELEASE_NOTARY_PROFILE`. Keep credential material in Keychain. For profile setup and distribution requirements, see [Apple's notarization guide](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
-4. Build the release image on a Mac with Finder, the Xcode tools, and ImageMagick already available. Use the exported app as the input and an existing output directory.
+4. Build the release image on a Mac with Finder and the Xcode tools available. Use the exported app as the input and an existing output directory.
 
    ```bash
    bash NowPlayingForPlex/create-dmg.sh --release "export/PlexWidget.app" "release/NowPlaying-for-Plex.dmg"
    ```
 
-5. Test the resulting disk image on a clean Mac with Gatekeeper enabled before publishing it. Verify launch, Plex setup and music display on each supported architecture.
+5. Test the resulting disk image on a clean Mac with Gatekeeper enabled before publishing it. Verify launch, Plex setup and music display on each supported architecture. Separately, upgrade an installation of the previous public release with a working Plex connection and verify that it stays signed in.
 
 The release command checks the app’s Developer ID signature and bundle metadata before packaging. It writes the output only after signing, notarizing, stapling and validating the disk image. The `--local` mode creates an image for local layout checks.
 

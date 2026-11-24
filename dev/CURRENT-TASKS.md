@@ -5,14 +5,14 @@ Last updated 2026-11-24.
 ## Next
 
 - [ ] Test build 5 on the Mac. Confirm the existing Plex login survives, the widget and setup window drag, and Finder shows the approved DMG layout. Include Tab and Escape in the settings panel and confirm the orange On and grey Off launch-at-login switch.
-- [ ] Before a public release, choose an unused version, confirm the hosted macOS checks, and verify the signed, notarized release DMG on a clean Mac. Test Plex sign-in after upgrading from public v1.3.0 and decide how to handle sign-in for v1.0.0 users.
+- [ ] Confirm the hosted macOS checks for 1.3.1 build 6 and verify the signed, notarized release DMG on a clean Mac. Test Plex sign-in after upgrading from public v1.3.0. The README tells users upgrading directly from v1.0.0 to reconnect.
 - [ ] Check whether the removed integration still appears in the repository contributors list. This is a separate, older task.
 
 ## Where things stand
 
 - All 12 review fixes and the build 4 feedback are implemented. Local branch `fix/widget-window-border` contains the app changes at `91db731` and the installer changes at `9c9b471`. No push or release took place.
-- The current artifact is [NowPlaying for Plex 1.3.0 build 5](active/hostile-repo-review/testing/NowPlaying-for-Plex-1.3.0-5-test.dmg), signed ad hoc for local testing. It was selected in Finder. The session could not mount the image, so the actual install and live checks are still open.
-- The 23 standalone XCTest cases and packaging regression suite passed. Xcode 27.2 built both architectures. Security framework checks confirmed the signatures, sandbox and outgoing network entitlements. The DMG checksum and offline readback confirmed the exact app, original background, Finder layout and volume icon.
+- The current release candidate is **1.3.1 build 6**. Xcode 27.2 built the [unsigned app](../NowPlayingForPlex/build/1.3.1-6/PlexWidget.app), and the bundle check confirmed the expected version, privacy manifest, and both Apple Silicon and Intel executables. All 23 standalone app tests and the packaging tests passed. Xcode's app-hosted test run stopped at signing before running any tests.
+- [NowPlaying for Plex 1.3.0 build 5](active/hostile-repo-review/testing/NowPlaying-for-Plex-1.3.0-5-test.dmg) remains available as the ad hoc test installer. Security framework checks confirmed its signatures, sandbox and outgoing network entitlements. The disk-image checksum and offline readback confirmed the app, original background, Finder layout and volume icon. The session could not mount the image, so installation and live checks are still open.
 
 ## Decisions to keep
 
