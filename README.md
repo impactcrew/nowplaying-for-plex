@@ -163,7 +163,7 @@ This app:
 
 ## Recent Updates
 
-- **v1.3.1** - Restores dragging for the widget and setup window, adds playback source selection, and protects your saved connection when a server change fails. If you’re upgrading directly from v1.0.0, enter your Plex server address and token again during setup.
+- **v1.4.0** - New Amber branding and a redesigned installer. Playback Source lets you follow a Plex user or player. This update also restores dragging, remembers the widget position, and keeps short track text still. If you’re upgrading directly from v1.0.0, enter your Plex server address and token again during setup.
 
 - **v1.3.0** - Reduced polling and animation work during playback
   - Replaced infinite scroll animations with discrete animation cycles
