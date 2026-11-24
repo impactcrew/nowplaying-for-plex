@@ -58,9 +58,22 @@ struct SettingsView: View {
 
                 // Layout Style
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Layout Style")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.primary)
+                    HStack {
+                        Text("Layout Style")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+
+                        Spacer()
+
+                        Button(action: resetPosition) {
+                            Text("Reset Position")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .frame(minHeight: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     SegmentedControl(
                         options: [LayoutStyle.side, LayoutStyle.overlay, LayoutStyle.mini],
@@ -146,7 +159,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
 
-                // Server status and widget actions
+                // Server status and Quit
                 HStack(alignment: .top) {
                     // Left side: Server info
                     VStack(alignment: .leading, spacing: 4) {
@@ -176,30 +189,22 @@ struct SettingsView: View {
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Button(action: {
-                            NSApplication.shared.terminate(nil)
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "power")
-                                    .font(.system(size: 12, weight: .medium))
-                                Text("Quit")
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(SettingsAppearance.controlFill)
-                            .cornerRadius(8)
-                        }
-                        Button(action: resetPosition) {
-                            Text("Reset Position")
+                    Button(action: {
+                        NSApplication.shared.terminate(nil)
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "power")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
+                            Text("Quit")
+                                .font(.system(size: 13, weight: .medium))
                         }
-                        .fixedSize()
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(SettingsAppearance.controlFill)
+                        .cornerRadius(8)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.plain)
                 }
             }
             .padding(24)
