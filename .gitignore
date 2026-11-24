@@ -60,3 +60,8 @@ docs/
 
 # Disposable development files
 dev/scratch/
+
+# Local project notes and working material
+/dev/CURRENT-TASKS.md
+/dev/active/
+/dev/archived/
