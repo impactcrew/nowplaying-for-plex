@@ -1,3 +1,4 @@
+import CoreText
 import SwiftUI
 
 struct NowPlayingView: View {
@@ -8,12 +9,6 @@ struct NowPlayingView: View {
     @StateObject private var artwork = AlbumArtwork()
     @State private var displayTime: Int = 0
     @State private var timer: Timer?
-    @State private var titleOffset: CGFloat = 0
-    @State private var shouldScrollTitle = false
-    @State private var subtitleOffset: CGFloat = 0
-    @State private var shouldScrollSubtitle = false
-    @State private var titleScrollTask: Task<Void, Never>?
-    @State private var subtitleScrollTask: Task<Void, Never>?
 
     var progress: Double {
         guard nowPlaying.duration > 0 else { return 0 }
@@ -80,8 +75,6 @@ struct NowPlayingView: View {
         }
         .onDisappear {
             timer?.invalidate()
-            titleScrollTask?.cancel()
-            subtitleScrollTask?.cancel()
         }
         .task(id: nowPlaying.albumArtUrl) {
             await artwork.load(url: nowPlaying.albumArtUrl) { url in
@@ -110,36 +103,7 @@ struct NowPlayingView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     // Track info
                     VStack(alignment: .leading, spacing: 2) {
-                        // Scrolling title
-                        GeometryReader { geo in
-                            HStack(spacing: 30) {
-                                if shouldScrollTitle {
-                                    Text(nowPlaying.title)
-                                        .font(.system(size: 20, weight: .semibold))
-                                        .foregroundColor(titleColor)
-                                        .fixedSize()
-                                    Text(nowPlaying.title)
-                                        .font(.system(size: 20, weight: .semibold))
-                                        .foregroundColor(titleColor)
-                                        .fixedSize()
-                                } else {
-                                    Text(nowPlaying.title)
-                                        .font(.system(size: 20, weight: .semibold))
-                                        .foregroundColor(titleColor)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .offset(x: shouldScrollTitle ? titleOffset : 0)
-                            .onAppear {
-                                let textWidth = (nowPlaying.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 20, weight: .semibold)]).width
-                                if textWidth > geo.size.width {
-                                    shouldScrollTitle = true
-                                    startScrolling(textWidth: textWidth, containerWidth: geo.size.width)
-                                }
-                            }
-                        }
-                        .frame(height: 24)
-                        .clipped()
+                        titleLine(fontSize: 20, height: 24)
 
                         Text(nowPlaying.artist)
                             .font(.system(size: 16, weight: .regular))
@@ -236,36 +200,7 @@ struct NowPlayingView: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Track info
                 VStack(alignment: .leading, spacing: 2) {
-                    // Scrolling title
-                    GeometryReader { geo in
-                        HStack(spacing: 30) {
-                            if shouldScrollTitle {
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .fixedSize()
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .fixedSize()
-                            } else {
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .offset(x: shouldScrollTitle ? titleOffset : 0)
-                        .onAppear {
-                            let textWidth = (nowPlaying.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 20, weight: .semibold)]).width
-                            if textWidth > geo.size.width {
-                                shouldScrollTitle = true
-                                startScrolling(textWidth: textWidth, containerWidth: geo.size.width)
-                            }
-                        }
-                    }
-                    .frame(height: 24)
-                    .clipped()
+                    titleLine(fontSize: 20, height: 24)
 
                     Text(nowPlaying.artist)
                         .font(.system(size: 16, weight: .regular))
@@ -364,69 +299,17 @@ struct NowPlayingView: View {
             VStack(alignment: .leading, spacing: 4) {
                 // Track info - tighter spacing
                 VStack(alignment: .leading, spacing: 1) {
-                    // Scrolling title for mini mode
-                    GeometryReader { geo in
-                        HStack(spacing: 30) {
-                            if shouldScrollTitle {
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .fixedSize()
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .fixedSize()
-                            } else {
-                                Text(nowPlaying.title)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(titleColor)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .offset(x: shouldScrollTitle ? titleOffset : 0)
-                        .onAppear {
-                            let textWidth = (nowPlaying.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 14, weight: .semibold)]).width
-                            if textWidth > geo.size.width {
-                                shouldScrollTitle = true
-                                startScrolling(textWidth: textWidth, containerWidth: geo.size.width)
-                            }
-                        }
-                    }
-                    .frame(height: 17)
-                    .clipped()
+                    titleLine(fontSize: 14, height: 17)
 
-                    // Scrolling artist/album for mini mode
-                    GeometryReader { geo in
-                        let subtitleText = "\(nowPlaying.artist) — \(nowPlaying.album)"
-
-                        HStack(spacing: 30) {
-                            if shouldScrollSubtitle {
-                                Text(subtitleText)
-                                    .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(subtitleColor)
-                                    .fixedSize()
-                                Text(subtitleText)
-                                    .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(subtitleColor)
-                                    .fixedSize()
-                            } else {
-                                Text(subtitleText)
-                                    .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(subtitleColor)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .offset(x: shouldScrollSubtitle ? subtitleOffset : 0)
-                        .onAppear {
-                            let textWidth = (subtitleText as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 11, weight: .regular)]).width
-                            if textWidth > geo.size.width {
-                                shouldScrollSubtitle = true
-                                startSubtitleScrolling(textWidth: textWidth, containerWidth: geo.size.width)
-                            }
-                        }
-                    }
+                    PlaybackMarquee(
+                        text: "\(nowPlaying.artist) \u{2014} \(nowPlaying.album)",
+                        font: .systemFont(ofSize: 11),
+                        color: subtitleColor,
+                        isPlaying: nowPlaying.state == "playing",
+                        pointsPerSecond: 40
+                    )
+                    .equatable()
                     .frame(height: 14)
-                    .clipped()
                 }
 
                 // Compact progress bar
@@ -502,84 +385,74 @@ struct NowPlayingView: View {
         return String(format: "%d:%02d", mins, secs)
     }
 
-    private func startScrolling(textWidth: CGFloat, containerWidth: CGFloat) {
-        // Gap of 30px is defined in HStack spacing
-        let scrollDistance = textWidth + 30
-        let scrollDuration = Double(scrollDistance) / 50.0
+    private func titleLine(fontSize: CGFloat, height: CGFloat) -> some View {
+        PlaybackMarquee(
+            text: nowPlaying.title,
+            font: .systemFont(ofSize: fontSize, weight: .semibold),
+            color: titleColor,
+            isPlaying: nowPlaying.state == "playing",
+            pointsPerSecond: 50
+        )
+        .equatable()
+        .frame(height: height)
+    }
+}
 
-        // Cancel any existing scroll task
-        titleScrollTask?.cancel()
+struct PlaybackMarquee: View, Equatable {
+    fileprivate static let gap: CGFloat = 30
 
-        // Start discrete animation cycle
-        titleScrollTask = Task {
-            while !Task.isCancelled {
-                // Check if paused - if so, sleep and continue without animating
-                guard nowPlaying.state == "playing" else {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    continue
-                }
+    let text: String
+    let font: NSFont
+    let color: Color
+    let isPlaying: Bool
+    let pointsPerSecond: Double
 
-                // Reset to start position (no animation)
-                titleOffset = 0
-
-                // Wait 1 second before starting scroll
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                if Task.isCancelled { break }
-
-                // Animate scroll to end
-                await MainActor.run {
-                    withAnimation(.linear(duration: scrollDuration)) {
-                        titleOffset = -scrollDistance
-                    }
-                }
-
-                // Wait for animation to complete
-                try? await Task.sleep(nanoseconds: UInt64(scrollDuration * 1_000_000_000))
-                if Task.isCancelled { break }
-
-                // Pause at end position for 2 seconds
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-            }
-        }
+    func scrollDistance(in availableWidth: CGFloat) -> CGFloat? {
+        guard isPlaying, availableWidth > 0 else { return nil }
+        let textWidth = (text as NSString).size(withAttributes: [.font: font]).width
+        return textWidth > availableWidth ? textWidth + Self.gap : nil
     }
 
-    private func startSubtitleScrolling(textWidth: CGFloat, containerWidth: CGFloat) {
-        // Gap of 30px is defined in HStack spacing
-        let scrollDistance = textWidth + 30
-        let scrollDuration = Double(scrollDistance) / 40.0
+    var body: some View {
+        GeometryReader { geometry in
+            let label = Text(text).font(Font(font as CTFont)).foregroundColor(color)
+            if let distance = scrollDistance(in: geometry.size.width) {
+                MarqueeCycle(label: label, distance: distance, pointsPerSecond: pointsPerSecond)
+                    .id(text)
+                    .id(distance)
+            } else {
+                label.lineLimit(1)
+            }
+        }
+        .clipped()
+    }
+}
 
-        // Cancel any existing scroll task
-        subtitleScrollTask?.cancel()
+private struct MarqueeCycle: View {
+    let label: Text
+    let distance: CGFloat
+    let pointsPerSecond: Double
+    @State private var offset: CGFloat = 0
 
-        // Start discrete animation cycle
-        subtitleScrollTask = Task {
-            while !Task.isCancelled {
-                // Check if paused - if so, sleep and continue without animating
-                guard nowPlaying.state == "playing" else {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    continue
-                }
-
-                // Reset to start position (no animation)
-                subtitleOffset = 0
-
-                // Wait 1 second before starting scroll
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                if Task.isCancelled { break }
-
-                // Animate scroll to end
-                await MainActor.run {
-                    withAnimation(.linear(duration: scrollDuration)) {
-                        subtitleOffset = -scrollDistance
+    var body: some View {
+        HStack(spacing: PlaybackMarquee.gap) {
+            label.lineLimit(1).fixedSize(horizontal: true, vertical: false)
+            label.lineLimit(1).fixedSize(horizontal: true, vertical: false).accessibilityHidden(true)
+        }
+        .offset(x: offset)
+        .task {
+            let duration = Double(distance) / pointsPerSecond
+            do {
+                while !Task.isCancelled {
+                    offset = 0
+                    try await Task.sleep(for: .seconds(1))
+                    withAnimation(.linear(duration: duration)) {
+                        offset = -distance
                     }
+                    try await Task.sleep(for: .seconds(duration + 2))
                 }
-
-                // Wait for animation to complete
-                try? await Task.sleep(nanoseconds: UInt64(scrollDuration * 1_000_000_000))
-                if Task.isCancelled { break }
-
-                // Pause at end position for 2 seconds
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            } catch {
+                // SwiftUI cancels the task when the scrolling line changes or disappears.
             }
         }
     }
