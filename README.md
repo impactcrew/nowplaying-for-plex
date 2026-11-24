@@ -3,7 +3,7 @@
 
   # NowPlaying for Plex
 
-  ![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+  ![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)
   ![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
   ![Swift](https://img.shields.io/badge/Swift-6.2%2B-orange.svg)
   ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -162,6 +162,8 @@ This app:
 - Does not require internet access beyond your Plex server
 
 ## Recent Updates
+
+- **v1.3.1** - Restores dragging for the widget and setup window, adds playback source selection, and protects your saved connection when a server change fails. If you’re upgrading directly from v1.0.0, enter your Plex server address and token again during setup.
 
 - **v1.3.0** - Reduced polling and animation work during playback
   - Replaced infinite scroll animations with discrete animation cycles
