@@ -58,17 +58,42 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+attach_image() {
+    local image="$1"
+    local index=0
+    local entity mounted_path device
+    shift
+
+    hdiutil attach "$image" "$@" -plist -nobrowse -noautoopen -mountpoint "$mount_dir" > "$stage/attachment.plist"
+    while plutil -extract "system-entities.$index" xml1 -o - "$stage/attachment.plist" > /dev/null 2>&1; do
+        entity="system-entities.$index"
+        if mounted_path="$(plutil -extract "$entity.mount-point" raw -o - "$stage/attachment.plist" 2>/dev/null)" &&
+           [[ "$mounted_path" == "$mount_dir" ]]; then
+            device="$(plutil -extract "$entity.dev-entry" raw -o - "$stage/attachment.plist")"
+            if [[ "$device" =~ ^/dev/disk[0-9]+(s[0-9]+)*$ ]]; then
+                attached_device="$device"
+                return
+            fi
+        fi
+        index=$((index + 1))
+    done
+
+    printf 'Could not identify the newly mounted disk image.\n' >&2
+    return 1
+}
+
+detach_image() {
+    hdiutil detach "$attached_device"
+    attached_device=""
+}
+
 image_contents="$stage/contents"
 writable_image="$stage/layout.dmg"
 ready_image="$stage/output/$(basename "$output")"
 
 mkdir "$image_contents" "$mount_dir" "$stage/output"
 mkdir "$image_contents/.background"
-if [[ "$mode" == --test ]]; then
-    cp -pR "$source_app" "$image_contents/$app_name"
-else
-    ditto "$source_app" "$image_contents/$app_name"
-fi
+ditto --noextattr --norsrc "$source_app" "$image_contents/$app_name"
 ln -s /Applications "$image_contents/Applications"
 cp "$project_dir/dmg-layout/background.png" "$image_contents/.background/background.png"
 
@@ -82,32 +107,14 @@ if [[ "$mode" == --test ]]; then
         -hfs-openfolder "$image_contents" -o "$writable_image" "$image_contents"
 else
     hdiutil create -volname "$volume_name" -srcfolder "$image_contents" -format UDRW "$writable_image"
-    hdiutil attach "$writable_image" -plist -nobrowse -noautoopen -mountpoint "$mount_dir" > "$stage/attachment.plist"
-    index=0
-    while plutil -extract "system-entities.$index" xml1 -o - "$stage/attachment.plist" > /dev/null 2>&1; do
-        entity="system-entities.$index"
-        if mounted_path="$(plutil -extract "$entity.mount-point" raw -o - "$stage/attachment.plist" 2>/dev/null)" &&
-           [[ "$mounted_path" == "$mount_dir" ]]; then
-            device="$(plutil -extract "$entity.dev-entry" raw -o - "$stage/attachment.plist")"
-            if [[ "$device" =~ ^/dev/disk[0-9]+(s[0-9]+)*$ ]]; then
-                attached_device="$device"
-                break
-            fi
-        fi
-        index=$((index + 1))
-    done
-    if [[ -z "$attached_device" ]]; then
-        printf 'Could not identify the newly mounted disk image.\n' >&2
-        exit 1
-    fi
+    attach_image "$writable_image"
 
     ditto "$project_dir/dmg-volume-icon.icns" "$mount_dir/.VolumeIcon.icns"
     chflags hidden "$mount_dir/.background" "$mount_dir/.VolumeIcon.icns"
     SetFile -a C "$mount_dir"
     osascript "$project_dir/layout-dmg.applescript" "$mount_dir" "$app_name"
-
-    hdiutil detach "$attached_device"
-    attached_device=""
+    xattr -cr "$mount_dir/$app_name"
+    detach_image
 fi
 hdiutil convert "$writable_image" -format UDZO -imagekey zlib-level=9 -o "$ready_image"
 
@@ -121,6 +128,10 @@ if [[ "$mode" != --test ]]; then
 fi
 
 if [[ "$mode" == --release ]]; then
+    attach_image "$ready_image" -readonly
+    codesign --verify --deep --strict --test-requirement "$developer_id_requirement" "$mount_dir/$app_name"
+    detach_image
+
     codesign --sign "$PLEX_RELEASE_SIGNING_IDENTITY" --timestamp --identifier com.nowplayingforplex.app.dmg "$ready_image"
     codesign --verify --strict --test-requirement "$developer_id_requirement" "$ready_image"
     xcrun notarytool submit "$ready_image" --keychain-profile "$PLEX_RELEASE_NOTARY_PROFILE" --wait --output-format json > "$stage/notarization.json"
