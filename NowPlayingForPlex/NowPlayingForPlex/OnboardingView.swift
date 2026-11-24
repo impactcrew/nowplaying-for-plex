@@ -42,7 +42,7 @@ struct OnboardingView: View {
                     HStack(spacing: 12) {
                         Image(nsImage: NSImage(named: "AppIcon") ?? NSImage())
                             .resizable()
-                            .frame(width: 48, height: 48)
+                            .frame(width: 32, height: 32)
                             .accessibilityLabel("NowPlaying for Plex application icon")
 
                         Text("NowPlaying for Plex")
@@ -62,21 +62,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(alignment: .top, spacing: 12) {
-                            Text("1")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.black)
-                                .frame(width: 24, height: 24)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(red: 229/255, green: 160/255, blue: 13/255),
-                                            Color(red: 204/255, green: 123/255, blue: 2/255)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .clipShape(Circle())
+                            OnboardingStepNumber(number: 1)
                                 .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 8) {
@@ -183,8 +169,7 @@ struct OnboardingView: View {
                         .onSubmit(validateAndSave)
 
                         Toggle("Allow HTTP on my local network", isOn: $allowsLocalHTTP)
-                            .toggleStyle(.checkbox)
-                            .tint(Color(red: 229/255, green: 160/255, blue: 13/255))
+                            .toggleStyle(AmberCheckboxStyle())
                             .font(.system(size: 12))
                             .foregroundColor(.white.opacity(0.9))
                             .help("HTTP sends your Plex token without encryption. Use it only on a network you trust.")
@@ -385,6 +370,48 @@ struct OnboardingView: View {
     }
 }
 
+private struct AmberCheckboxStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(.white.opacity(0.17))
+                    .overlay {
+                        if configuration.isOn {
+                            RoundedRectangle(cornerRadius: 3).fill(BrandAppearance.amberGradient)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.black)
+                        }
+                    }
+                    .frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
+                configuration.label
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.checkbox)
+        }
+    }
+}
+
+private struct OnboardingStepNumber: View {
+    let number: Int
+
+    var body: some View {
+        Text("\(number)")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(.black)
+            .frame(width: 24, height: 24)
+            .background(BrandAppearance.amberGradient, in: Circle())
+    }
+}
+
 struct InstructionStep: View {
     let number: Int
     let title: String
@@ -392,21 +419,7 @@ struct InstructionStep: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Text("\(number)")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.black)
-                .frame(width: 24, height: 24)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 229/255, green: 160/255, blue: 13/255),
-                            Color(red: 204/255, green: 123/255, blue: 2/255)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .clipShape(Circle())
+            OnboardingStepNumber(number: number)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

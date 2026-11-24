@@ -221,13 +221,7 @@ struct SettingsView: View {
 }
 
 private enum SettingsAppearance {
-    static let accent = Color(red: 229/255, green: 160/255, blue: 13/255)
     static let controlFill = Color.white.opacity(0.1)
-    static let selectionFill = LinearGradient(
-        colors: [accent, Color(red: 204/255, green: 123/255, blue: 2/255)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
 }
 
 private struct SettingsPanelSurface: ViewModifier {
@@ -279,7 +273,7 @@ struct SegmentedControl<T: RawRepresentable & Equatable>: View where T.RawValue 
                         .padding(.horizontal, 10)
                         .background {
                             if isSelected {
-                                SettingsAppearance.selectionFill
+                                BrandAppearance.amberGradient
                             }
                         }
                         .cornerRadius(8)
@@ -319,7 +313,7 @@ struct SegmentedControlBool: View {
                         .padding(.horizontal, 16)
                         .background {
                             if isSelected {
-                                SettingsAppearance.selectionFill
+                                BrandAppearance.amberGradient
                             }
                         }
                         .cornerRadius(8)
@@ -386,7 +380,7 @@ struct PlexToggle: View {
                     .fill(Color.white.opacity(0.3))
                     .overlay {
                         if isOn {
-                            Capsule().fill(SettingsAppearance.selectionFill)
+                            Capsule().fill(BrandAppearance.amberGradient)
                         }
                     }
 
