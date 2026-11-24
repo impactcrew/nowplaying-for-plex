@@ -56,27 +56,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             showOnboarding(savedConnection: savedConnection)
         }
 
-        // Create menu bar item with Plex chevron icon
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusBarItem?.button {
-            // Create the Plex chevron icon from SVG path
-            let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+            let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
                 NSColor.black.setFill()
-                let path = NSBezierPath()
-                // Plex chevron polygon: "117.9,33.9 104.1,13.5 118.3,13.5 132,33.9 118.3,54.2 104.1,54.2"
-                // Translate to origin and scale to fit 18x18
-                let scale: CGFloat = 0.44
-                let offsetX: CGFloat = -104.1 * scale
-                let offsetY: CGFloat = -13.5 * scale
-
-                path.move(to: NSPoint(x: 117.9 * scale + offsetX, y: 33.9 * scale + offsetY))
-                path.line(to: NSPoint(x: 104.1 * scale + offsetX, y: 13.5 * scale + offsetY))
-                path.line(to: NSPoint(x: 118.3 * scale + offsetX, y: 13.5 * scale + offsetY))
-                path.line(to: NSPoint(x: 132.0 * scale + offsetX, y: 33.9 * scale + offsetY))
-                path.line(to: NSPoint(x: 118.3 * scale + offsetX, y: 54.2 * scale + offsetY))
-                path.line(to: NSPoint(x: 104.1 * scale + offsetX, y: 54.2 * scale + offsetY))
-                path.close()
-                path.fill()
+                let barHeights: [CGFloat] = [10, 16, 12]
+                for (index, height) in barHeights.enumerated() {
+                    let bar = NSRect(x: 1 + 6 * CGFloat(index), y: (18 - height) / 2, width: 4, height: height)
+                    NSBezierPath(roundedRect: bar, xRadius: 1, yRadius: 1).fill()
+                }
                 return true
             }
             image.isTemplate = true

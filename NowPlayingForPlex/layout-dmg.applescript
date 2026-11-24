@@ -10,6 +10,7 @@ on run arguments
             set current view of installerWindow to icon view
             set toolbar visible of installerWindow to false
             set statusbar visible of installerWindow to false
+            set pathbar visible of installerWindow to false
 
             set viewOptions to icon view options of installerWindow
             set arrangement of viewOptions to not arranged
