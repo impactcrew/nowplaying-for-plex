@@ -16,6 +16,9 @@ case "$tool" in
                 [[ -s "$contents/.background/background.png" && -s "$contents/.DS_Store" &&
                     -s "$contents/.VolumeIcon.icns" && -d "$contents/NowPlaying for Plex.app" ]] || exit 1
                 [[ "$(readlink "$contents/Applications")" == /Applications ]] || exit 1
+                signature="NowPlaying for Plex.app/Contents/_CodeSignature/CodeResources"
+                cmp "$PLEX_PACKAGING_TEST_ROOT/build/$signature" "$contents/$signature" || exit 1
+                [[ -z "$(/usr/bin/xattr "$contents/$signature")" ]] || exit 1
                 touch "${@: -2:1}"
                 ;;
             attach)
@@ -44,6 +47,7 @@ case "$tool" in
         ;;
     ditto)
         if [[ "${@: -2:1}" == *.app ]]; then
+            [[ "${PLEX_PACKAGING_TEST_REJECT_APP_DITTO:-}" != 1 ]] || exit 1
             mkdir -p "${@: -1}"
         else
             touch "${@: -1}"

@@ -137,9 +137,11 @@ if grep -q '^hdiutil ' "$PLEX_PACKAGING_TEST_LOG"; then
 fi
 mkdir "$bundle_contents/_CodeSignature"
 printf '%s\n' "signature fixture" > "$bundle_contents/_CodeSignature/CodeResources"
+/usr/bin/xattr -w com.nowplayingforplex.fixture "metadata fixture" "$bundle_contents/_CodeSignature/CodeResources"
 
 export PLEX_PACKAGING_TEST_LOG="$test_dir/offline-test.log"
-run_package --test || fail "Offline packaging did not include the Finder layout and artwork."
+export PLEX_PACKAGING_TEST_REJECT_APP_DITTO=1
+run_package --test || fail "Offline packaging did not preserve the app signature files without copying metadata."
 if grep -E '^(hdiutil (attach|detach) |osascript |codesign |xcrun notarytool )' "$PLEX_PACKAGING_TEST_LOG"; then
     fail "Offline packaging should use neither Finder nor the disk-mount or signing services."
 fi
