@@ -2,27 +2,10 @@ import SwiftUI
 import MediaPlayer
 
 struct ContentView: View {
-    @StateObject private var plexAPI: PlexAPI
+    @ObservedObject var plexAPI: PlexAPI
     @State private var mediaController = MediaRemoteController.shared
     @ObservedObject var settings: WidgetSettings
     @AppStorage("hasPlayedBefore") private var wasPlaying = false
-
-    init(settings: WidgetSettings) {
-        self.settings = settings
-        // Load configuration
-        if let config = ConfigManager.shared.loadConfig() {
-            _plexAPI = StateObject(wrappedValue: PlexAPI(
-                serverUrl: config.plexServerUrl,
-                token: config.plexToken
-            ))
-        } else {
-            // Fallback to empty API (will show error)
-            _plexAPI = StateObject(wrappedValue: PlexAPI(
-                serverUrl: "",
-                token: ""
-            ))
-        }
-    }
 
     var placeholderNowPlaying: NowPlaying {
         NowPlaying(
@@ -94,6 +77,7 @@ struct ContentView: View {
             }
         }
         .frame(width: contentWidth, height: contentHeight)
+        .overlay { WindowDragArea().accessibilityHidden(true) }
         .padding(contentPadding)
         .background(Color.clear)
         .onAppear {
@@ -118,6 +102,26 @@ struct ContentView: View {
         )
 
         mediaController.updatePlaybackState(isPlaying: nowPlaying.state == "playing")
+    }
+}
+
+struct WindowDragArea: NSViewRepresentable {
+    func makeNSView(context: Context) -> WindowDragView {
+        WindowDragView()
+    }
+
+    func updateNSView(_ view: WindowDragView, context: Context) {}
+}
+
+final class WindowDragView: NSView {
+    override var mouseDownCanMoveWindow: Bool { false }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
     }
 }
 
@@ -256,21 +260,24 @@ struct BlankPlayerView: View {
 struct VisualEffectView: NSViewRepresentable {
     let material: NSVisualEffectView.Material
     let blendingMode: NSVisualEffectView.BlendingMode
+    var maskImage: NSImage? = nil
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = material
         view.blendingMode = blendingMode
         view.state = .active
+        view.maskImage = maskImage
         return view
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+        nsView.maskImage = maskImage
     }
 }
 
 #Preview {
-    ContentView(settings: WidgetSettings.shared)
+    ContentView(plexAPI: PlexAPI(serverUrl: "", token: ""), settings: WidgetSettings.shared)
 }

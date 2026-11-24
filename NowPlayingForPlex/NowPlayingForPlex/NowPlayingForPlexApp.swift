@@ -23,64 +23,48 @@ class KeyableWindow: NSWindow {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var window: NSWindow!
-    var onboardingWindow: NSWindow?
-    var statusBarItem: NSStatusItem?
-    var settingsWindow: NSWindow?
-    lazy var settings = WidgetSettings.shared
-    var clickOutsideMonitor: Any?
-    var cachedConfig: PlexConfig? // Cache config to avoid multiple Keychain accesses
+    private var window: NSWindow?
+    private var onboardingWindow: NSWindow?
+    private var statusBarItem: NSStatusItem?
+    private var settingsWindow: NSWindow?
+    private var plexAPI: PlexAPI?
+    private lazy var settings = WidgetSettings.shared
+    private var globalClickMonitor: Any?
+    private var localClickMonitor: Any?
     private var layoutObserver: AnyCancellable?
     private var currentLayout: LayoutStyle = .side
 
-    // Keys for saving window position
     private let windowPositionXKey = "windowPositionX"
     private let windowPositionYKey = "windowPositionY"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Listen for reset/reconfigure requests
+        guard ProcessInfo.processInfo.environment["PLEX_WIDGET_TEST_HOST"] != "1" else { return }
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleShowOnboarding),
-            name: NSNotification.Name("ShowOnboarding"),
-            object: nil
+            selector: #selector(screenParametersDidChange),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: NSApp
         )
-        // Check if user has completed onboarding AND config can be loaded
-        // This prevents corrupted state where URL exists but token doesn't
-        if !ConfigManager.shared.hasCompletedOnboarding() || ConfigManager.shared.loadConfig() == nil {
-            // Show onboarding - use regular activation policy to show window
-            NSApp.setActivationPolicy(.regular)
-            showOnboarding()
-        } else {
-            // Show main widget - use accessory activation policy (menu bar only)
+
+        let savedConnection = ConfigManager.shared.loadSavedConnection()
+        if let config = savedConnection.config {
             NSApp.setActivationPolicy(.accessory)
-            Task { @MainActor in
-                showMainWidget()
-            }
+            showMainWidget(config: config)
+        } else {
+            showOnboarding(savedConnection: savedConnection)
         }
 
-        // Create menu bar item with Plex chevron icon
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusBarItem?.button {
-            // Create the Plex chevron icon from SVG path
-            let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+            let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
                 NSColor.black.setFill()
-                let path = NSBezierPath()
-                // Plex chevron polygon: "117.9,33.9 104.1,13.5 118.3,13.5 132,33.9 118.3,54.2 104.1,54.2"
-                // Translate to origin and scale to fit 18x18
-                let scale: CGFloat = 0.44
-                let offsetX: CGFloat = -104.1 * scale
-                let offsetY: CGFloat = -13.5 * scale
-
-                path.move(to: NSPoint(x: 117.9 * scale + offsetX, y: 33.9 * scale + offsetY))
-                path.line(to: NSPoint(x: 104.1 * scale + offsetX, y: 13.5 * scale + offsetY))
-                path.line(to: NSPoint(x: 118.3 * scale + offsetX, y: 13.5 * scale + offsetY))
-                path.line(to: NSPoint(x: 132.0 * scale + offsetX, y: 33.9 * scale + offsetY))
-                path.line(to: NSPoint(x: 118.3 * scale + offsetX, y: 54.2 * scale + offsetY))
-                path.line(to: NSPoint(x: 104.1 * scale + offsetX, y: 54.2 * scale + offsetY))
-                path.close()
-                path.fill()
+                let barHeights: [CGFloat] = [8, 14, 8, 12, 6]
+                for (index, height) in barHeights.enumerated() {
+                    let bar = NSRect(x: 4 * CGFloat(index), y: (18 - height) / 2, width: 2, height: height)
+                    NSBezierPath(roundedRect: bar, xRadius: 0.5, yRadius: 0.5).fill()
+                }
                 return true
             }
             image.isTemplate = true
@@ -90,268 +74,326 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func showOnboarding() {
-        let onboardingView = OnboardingView(
-            onComplete: { [weak self] serverUrl, token in
-                guard let self = self else { return }
-
-                // CRITICAL FIX: Defer window closure to next run loop cycle
-                // This ensures all autorelease pools from the button action have drained
-                // before we destroy the window and its view hierarchy
-                // Without this delay, we get EXC_BAD_ACCESS crashes in objc_autoreleasePoolPop
-                // because SwiftUI objects are double-freed
-                // WORKAROUND: Don't destroy the onboarding window - just hide it
-                // Destroying it causes SwiftUI double-free crashes
-                // Keep it alive but hidden to avoid memory management issues
-                DispatchQueue.main.async {
-                    // Hide window
-                    self.onboardingWindow?.orderOut(nil)
-
-                    // Change to accessory mode and show main widget
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        NSApp.setActivationPolicy(.accessory)
-
-                        Task { @MainActor in
-                            self.showMainWidget()
-                        }
-                    }
-                }
-            },
-            onClose: { [weak self] in
-                guard let self = self else { return }
-                // User closed onboarding without completing setup
-                // Clear content view first to break SwiftUI reference cycle
-                self.onboardingWindow?.contentView = nil
-                self.onboardingWindow?.close()
-                self.onboardingWindow = nil
-
-                // Ensure we're in a clean state before terminating
-                // This avoids EXC_BAD_ACCESS crashes during autorelease pool cleanup
-                DispatchQueue.main.async {
-                    // Let the current run loop complete to finish window cleanup
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        NSApplication.shared.terminate(nil)
-                    }
-                }
-            }
-        )
-
-        // Center onboarding window
-        let screenFrame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
-        let windowWidth: CGFloat = 520
-        let windowHeight: CGFloat = 600
-        let xPosition = (screenFrame.width - windowWidth) / 2
-        let yPosition = (screenFrame.height - windowHeight) / 2
-
-        onboardingWindow = KeyableWindow(
-            contentRect: NSRect(x: xPosition, y: yPosition, width: windowWidth, height: windowHeight),
-            styleMask: [.borderless, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-
-        onboardingWindow?.isOpaque = false
-        onboardingWindow?.backgroundColor = .clear
-        onboardingWindow?.level = .floating
-        onboardingWindow?.isMovableByWindowBackground = true
-
-        // Create hosting view without autoreleasepool wrapper
-        // The autoreleasepool was causing double-free crashes because SwiftUI objects
-        // were being released while still referenced by the active view hierarchy
-        let hostingView = NSHostingView(rootView: onboardingView)
-        onboardingWindow?.contentView = hostingView
-        onboardingWindow?.makeKeyAndOrderFront(nil)
-
-        // Ensure window can accept keyboard input in borderless mode
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    @MainActor
-    func showMainWidget() {
-        // Window dimensions based on layout style
-        let (windowWidth, windowHeight) = windowSizeForLayout(settings.layoutStyle)
-        let screenWidth = NSScreen.main?.frame.width ?? 1920
-
-        // Restore saved position or use default (bottom-right corner)
-        let xPosition: CGFloat
-        let yPosition: CGFloat
-        if let savedX = UserDefaults.standard.object(forKey: windowPositionXKey) as? CGFloat,
-           let savedY = UserDefaults.standard.object(forKey: windowPositionYKey) as? CGFloat {
-            xPosition = savedX
-            yPosition = savedY
-        } else {
-            xPosition = screenWidth - windowWidth - 20
-            yPosition = 20
+    private func showOnboarding(savedConnection: SavedPlexConnection? = nil) {
+        if let onboardingWindow, onboardingWindow.isVisible {
+            NSApp.activate(ignoringOtherApps: true)
+            onboardingWindow.makeKeyAndOrderFront(nil)
+            return
         }
 
-        window = NSWindow(
-            contentRect: NSRect(x: xPosition, y: yPosition, width: windowWidth, height: windowHeight),
+        let savedConnection = savedConnection ?? ConfigManager.shared.loadSavedConnection()
+        let currentConfig = savedConnection.config
+        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
+        let size = NSSize(width: 520, height: 600)
+        let setupWindow = KeyableWindow(
+            contentRect: NSRect(
+                x: screenFrame.midX - size.width / 2,
+                y: screenFrame.midY - size.height / 2,
+                width: size.width,
+                height: size.height
+            ),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
+        setupWindow.isOpaque = false
+        setupWindow.backgroundColor = .clear
+        setupWindow.level = .floating
+        let savedConnectionMessage: String?
+        let retrySavedConnection: (() -> Bool)?
+        switch savedConnection {
+        case .unavailable:
+            savedConnectionMessage = "Unable to read your saved Plex connection. Check Keychain access, then retry it here."
+            retrySavedConnection = { [weak self, weak setupWindow] in
+                guard let self, let setupWindow,
+                      let config = ConfigManager.shared.loadSavedConnection().config else { return false }
+                self.finishOnboarding(setupWindow, config: config)
+                return true
+            }
+        case .needsReview:
+            savedConnectionMessage = "The saved server address and Plex token could not be matched. Check your server address and enter its token to reconnect."
+            retrySavedConnection = nil
+        case .available, .missing:
+            savedConnectionMessage = nil
+            retrySavedConnection = nil
+        }
 
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
-        window.isMovableByWindowBackground = true
-        window.hasShadow = true
+        let onboardingView = OnboardingView(
+            onComplete: { [weak self, weak setupWindow] config in
+                guard let self, let setupWindow else { return }
+                self.finishOnboarding(setupWindow, config: config)
+            },
+            onClose: { [weak self, weak setupWindow] in
+                guard let self, let setupWindow else { return }
+                self.finishOnboarding(setupWindow)
+            },
+            initialServerURL: currentConfig?.plexServerUrl ?? ConfigManager.shared.getServerUrl() ?? "",
+            initialAllowsLocalHTTP: currentConfig?.allowsLocalHTTP ?? false,
+            savedConnectionMessage: savedConnectionMessage,
+            retrySavedConnection: retrySavedConnection
+        )
+        setupWindow.contentView = NSHostingView(rootView: onboardingView)
+        onboardingWindow = setupWindow
 
-        // Set content view
-        let contentView = ContentView(settings: settings)
-        window.contentView = NSHostingView(rootView: contentView)
-        window.makeKeyAndOrderFront(nil)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        setupWindow.makeKeyAndOrderFront(nil)
+    }
 
-        // Prevent window from appearing in Mission Control
-        window.collectionBehavior.insert(.transient)
+    private func finishOnboarding(_ setupWindow: NSWindow, config: PlexConfig? = nil) {
+        // AppKit may still be dispatching the hosted view's button action.
+        DispatchQueue.main.async { [weak self, weak setupWindow] in
+            guard let self, let setupWindow, self.onboardingWindow === setupWindow else { return }
+            setupWindow.orderOut(nil)
+            self.onboardingWindow = nil
 
-        // Listen for window move events to save position
+            if let config {
+                NSApp.setActivationPolicy(.accessory)
+                self.showMainWidget(config: config)
+            } else if let window = self.window {
+                NSApp.setActivationPolicy(.accessory)
+                window.orderFront(nil)
+            } else {
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    private func showMainWidget(config: PlexConfig) {
+        plexAPI?.stopUpdating()
+        let api = PlexAPI(serverUrl: config.plexServerUrl, token: config.plexToken, allowsLocalHTTP: config.allowsLocalHTTP)
+        plexAPI = api
+
+        let widgetWindow = window ?? makeWidgetWindow()
+        widgetWindow.contentView = NSHostingView(rootView: ContentView(plexAPI: api, settings: settings))
+        widgetWindow.orderFront(nil)
+    }
+
+    private func makeWidgetWindow() -> NSWindow {
+        let size = windowSizeForLayout(settings.layoutStyle)
+        let screens = visibleScreenFrames
+        var frame = WidgetWindowPlacement.defaultFrame(size: size, on: screens.first)
+        let defaults = UserDefaults.standard
+        if let savedX = defaults.object(forKey: windowPositionXKey) as? NSNumber,
+           let savedY = defaults.object(forKey: windowPositionYKey) as? NSNumber,
+           savedX.doubleValue.isFinite, savedY.doubleValue.isFinite {
+            frame.origin = CGPoint(x: savedX.doubleValue, y: savedY.doubleValue)
+        }
+
+        let widgetWindow = NSWindow(
+            contentRect: WidgetWindowPlacement.restoredFrame(frame, screens: screens),
+            styleMask: [.borderless, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        widgetWindow.isOpaque = false
+        widgetWindow.backgroundColor = .clear
+        widgetWindow.level = .floating
+        widgetWindow.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .transient]
+        widgetWindow.isMovable = true
+        // The player draws its own shadows.
+        widgetWindow.hasShadow = false
+        window = widgetWindow
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(windowDidMove),
             name: NSWindow.didMoveNotification,
-            object: window
+            object: widgetWindow
         )
 
-        // Track current layout
         currentLayout = settings.layoutStyle
-
-        // Observe layout style changes to resize window
         layoutObserver = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
             .sink { [weak self] _ in
-                guard let self = self else { return }
-                let newLayout = self.settings.layoutStyle
-                if newLayout != self.currentLayout {
-                    self.currentLayout = newLayout
-                    self.resizeWindowForLayout(newLayout)
-                }
+                guard let self, self.settings.layoutStyle != self.currentLayout else { return }
+                self.currentLayout = self.settings.layoutStyle
+                self.resizeWindowForLayout(self.currentLayout)
             }
+        return widgetWindow
     }
 
-    private func windowSizeForLayout(_ layout: LayoutStyle) -> (CGFloat, CGFloat) {
+    private var visibleScreenFrames: [CGRect] {
+        NSScreen.screens.map(\.visibleFrame)
+    }
+
+    private func windowSizeForLayout(_ layout: LayoutStyle) -> CGSize {
         switch layout {
         case .side, .overlay:
-            return (592, 232)  // 552 + 40 padding
+            return CGSize(width: 592, height: 232)
         case .mini:
-            return (320, 100)  // 290 + 30 padding, 70 + 30 padding
+            return CGSize(width: 320, height: 100)
         }
     }
 
     private func resizeWindowForLayout(_ layout: LayoutStyle) {
-        guard let window = window else { return }
-        let (newWidth, newHeight) = windowSizeForLayout(layout)
-        let currentFrame = window.frame
-
-        // Keep the same top-right corner position when resizing
-        let newX = currentFrame.maxX - newWidth
-        let newY = currentFrame.minY
-
-        let newFrame = NSRect(x: newX, y: newY, width: newWidth, height: newHeight)
-        window.setFrame(newFrame, display: true, animate: true)
+        guard let window else { return }
+        let size = windowSizeForLayout(layout)
+        let frame = window.frame
+        let resizedFrame = CGRect(x: frame.maxX - size.width, y: frame.minY, width: size.width, height: size.height)
+        positionWidget(
+            at: WidgetWindowPlacement.visibleFrame(resizedFrame, screens: visibleScreenFrames),
+            animate: true
+        )
     }
 
-    @objc func windowDidMove(_ notification: Notification) {
-        guard let movedWindow = notification.object as? NSWindow,
-              movedWindow === window else { return }
-
-        // Save window position
-        let frame = movedWindow.frame
-        UserDefaults.standard.set(frame.origin.x, forKey: windowPositionXKey)
-        UserDefaults.standard.set(frame.origin.y, forKey: windowPositionYKey)
+    @objc private func screenParametersDidChange() {
+        guard let window else { return }
+        positionWidget(at: WidgetWindowPlacement.restoredFrame(window.frame, screens: visibleScreenFrames))
     }
 
-    @objc func toggleSettings() {
-        if let settingsWindow = settingsWindow, settingsWindow.isVisible {
-            settingsWindow.orderOut(nil)
-            self.settingsWindow = nil
-            // Clean up monitor
-            if let monitor = clickOutsideMonitor {
-                NSEvent.removeMonitor(monitor)
-                clickOutsideMonitor = nil
-            }
+    private func resetWidgetPosition() {
+        let screens = visibleScreenFrames
+        let frame = WidgetWindowPlacement.defaultFrame(
+            size: windowSizeForLayout(settings.layoutStyle),
+            on: screens.first
+        )
+        positionWidget(at: WidgetWindowPlacement.visibleFrame(frame, screens: screens), animate: true)
+    }
+
+    private func positionWidget(at frame: CGRect, animate: Bool = false) {
+        guard let window else { return }
+        if window.frame != frame {
+            window.setFrame(frame, display: true, animate: animate)
+        }
+        savePosition(frame.origin)
+    }
+
+    @objc private func windowDidMove(_ notification: Notification) {
+        guard let movedWindow = notification.object as? NSWindow, movedWindow === window else { return }
+        savePosition(movedWindow.frame.origin)
+    }
+
+    private func savePosition(_ origin: CGPoint) {
+        UserDefaults.standard.set(origin.x, forKey: windowPositionXKey)
+        UserDefaults.standard.set(origin.y, forKey: windowPositionYKey)
+    }
+
+    @objc private func toggleSettings() {
+        if settingsWindow?.isVisible == true {
+            dismissSettings(restoreKeyboardFocus: true)
+        } else if onboardingWindow?.isVisible == true || plexAPI == nil {
+            showOnboarding()
         } else {
             showSettings()
         }
     }
 
-    func showSettings() {
-        guard let button = statusBarItem?.button else { return }
-
-        let buttonFrame = button.window?.convertToScreen(button.frame) ?? .zero
-        let settingsWidth: CGFloat = 280
-        let settingsHeight: CGFloat = 420
-
-        // Position below menu bar icon - left-aligned with no gap
-        let xPosition = buttonFrame.minX
-        let yPosition = buttonFrame.minY - settingsHeight
-
-        settingsWindow = NSWindow(
-            contentRect: NSRect(x: xPosition, y: yPosition, width: settingsWidth, height: settingsHeight),
+    private func showSettings() {
+        guard let button = statusBarItem?.button, let plexAPI else { return }
+        dismissSettings()
+        let buttonFrame = statusButtonFrame
+        let settingsView = SettingsView(
+            settings: settings,
+            plexAPI: plexAPI,
+            changeServer: { [weak self] in
+                self?.dismissSettings()
+                self?.showOnboarding()
+            },
+            resetPosition: { [weak self] in self?.resetWidgetPosition() },
+            dismiss: { [weak self] in self?.dismissSettings(restoreKeyboardFocus: true) }
+        )
+        let hostingView = NSHostingView(rootView: settingsView)
+        let size = hostingView.fittingSize
+        let screen = button.window?.screen?.visibleFrame
+        let x = screen.map { max($0.minX, min(buttonFrame.minX, $0.maxX - size.width)) } ?? buttonFrame.minX
+        let panel = KeyableWindow(
+            contentRect: NSRect(x: x, y: buttonFrame.minY - size.height, width: size.width, height: size.height),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        panel.contentView = hostingView
+        panel.initialFirstResponder = hostingView
+        settingsWindow = panel
 
-        settingsWindow?.isOpaque = false
-        settingsWindow?.backgroundColor = .clear
-        settingsWindow?.level = .floating
-        settingsWindow?.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
 
-        let settingsView = SettingsView(settings: settings)
-        settingsWindow?.contentView = NSHostingView(rootView: settingsView)
-        settingsWindow?.makeKeyAndOrderFront(nil)
-
-        // Remove any existing monitor
-        if let monitor = clickOutsideMonitor {
-            NSEvent.removeMonitor(monitor)
-            clickOutsideMonitor = nil
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.dismissSettingsForOutsideClick()
         }
-
-        // Close settings when clicking outside - use global monitor to catch all clicks
-        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self = self,
-                  let settingsWindow = self.settingsWindow,
-                  settingsWindow.isVisible else {
-                return
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            if let self, let eventWindow = event.window, eventWindow === self.window {
+                self.dismissSettingsForOutsideClick()
             }
+            return event
+        }
+    }
 
-            // Get click location in screen coordinates
-            let clickLocation = NSEvent.mouseLocation
+    private var statusButtonFrame: NSRect {
+        guard let button = statusBarItem?.button, let buttonWindow = button.window else { return .zero }
+        return buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+    }
 
-            // Get menu button frame if available
-            let buttonFrame = self.statusBarItem?.button?.window?.convertToScreen(self.statusBarItem?.button?.frame ?? .zero) ?? .zero
+    private func dismissSettingsForOutsideClick() {
+        guard let settingsWindow, settingsWindow.isVisible else { return }
+        let location = NSEvent.mouseLocation
+        if !settingsWindow.frame.contains(location) && !statusButtonFrame.contains(location) {
+            dismissSettings()
+        }
+    }
 
-            // Check if click is outside both settings window and menu button
-            if !settingsWindow.frame.contains(clickLocation) && !buttonFrame.contains(clickLocation) {
-                self.settingsWindow?.orderOut(nil)
-                self.settingsWindow = nil
-                if let monitor = self.clickOutsideMonitor {
-                    NSEvent.removeMonitor(monitor)
-                    self.clickOutsideMonitor = nil
-                }
-            }
+    private func dismissSettings(restoreKeyboardFocus: Bool = false) {
+        settingsWindow?.orderOut(nil)
+        settingsWindow = nil
+        if let globalClickMonitor {
+            NSEvent.removeMonitor(globalClickMonitor)
+            self.globalClickMonitor = nil
+        }
+        if let localClickMonitor {
+            NSEvent.removeMonitor(localClickMonitor)
+            self.localClickMonitor = nil
+        }
+        if restoreKeyboardFocus, let button = statusBarItem?.button {
+            button.window?.makeFirstResponder(button)
         }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return false
+        false
+    }
+}
+
+enum WidgetWindowPlacement {
+    static func defaultFrame(size: CGSize, on screen: CGRect?) -> CGRect {
+        let visible = screen ?? CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        return CGRect(
+            x: max(visible.minX, visible.maxX - size.width - 20),
+            y: min(visible.minY + 20, max(visible.minY, visible.maxY - size.height)),
+            width: size.width,
+            height: size.height
+        )
     }
 
-    @objc func handleShowOnboarding() {
-        // Close settings window
-        settingsWindow?.orderOut(nil)
-        settingsWindow = nil
-        if let monitor = clickOutsideMonitor {
-            NSEvent.removeMonitor(monitor)
-            clickOutsideMonitor = nil
+    static func restoredFrame(_ frame: CGRect, screens: [CGRect]) -> CGRect {
+        // The transparent margins can extend beyond the usable desktop after a drag.
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        if screens.contains(where: { $0.contains(center) }) {
+            return frame
         }
+        return visibleFrame(frame, screens: screens)
+    }
 
-        // Hide main widget
-        window?.orderOut(nil)
+    static func visibleFrame(_ frame: CGRect, screens: [CGRect]) -> CGRect {
+        guard let primary = screens.first else { return frame }
+        let overlapping = screens.max { overlapArea(frame, $0) < overlapArea(frame, $1) }
+        guard let screen = overlapping, overlapArea(frame, screen) > 0 else {
+            return defaultFrame(size: frame.size, on: primary)
+        }
+        return CGRect(
+            x: max(screen.minX, min(frame.minX, screen.maxX - frame.width)),
+            y: max(screen.minY, min(frame.minY, screen.maxY - frame.height)),
+            width: frame.width,
+            height: frame.height
+        )
+    }
 
-        // Show onboarding
-        NSApp.setActivationPolicy(.regular)
-        showOnboarding()
+    private static func overlapArea(_ frame: CGRect, _ screen: CGRect) -> CGFloat {
+        let overlap = frame.intersection(screen)
+        return overlap.width * overlap.height
     }
 }

@@ -1,141 +1,156 @@
 import Foundation
 import Security
 
-struct PlexConfig {
+struct PlexConfig: Codable {
     let plexServerUrl: String
     let plexToken: String
+    let allowsLocalHTTP: Bool
 }
 
-class ConfigManager {
-    static let shared = ConfigManager()
+enum SavedPlexConnection {
+    case available(PlexConfig)
+    case missing
+    case needsReview
+    case unavailable
 
-    private let keychainService = "com.nowplayingforplex.credentials"
-    private let tokenAccount = "plex-token"
-    private let serverUrlKey = "plex-server-url"
+    var config: PlexConfig? {
+        if case let .available(config) = self { return config }
+        return nil
+    }
+}
 
-    private init() {}
+protocol PlexCredentialStore {
+    func read(account: String) throws -> Data?
+    func save(_ data: Data, account: String) throws
+}
 
-    func hasCompletedOnboarding() -> Bool {
-        // Check UserDefaults only (doesn't trigger Keychain permission)
-        return loadServerUrlFromUserDefaults() != nil
+final class ConfigManager {
+    static let shared = ConfigManager(defaults: .standard, store: KeychainPlexCredentialStore())
+
+    private let connectionAccount = "plex-connection"
+    private let legacyTokenAccount = "plex-token"
+    private let serverURLKey = "plex-connection-server-url"
+    private let legacyServerURLKey = "plex-server-url"
+    private let debugTokenKey = "plex-token-debug"
+    private let defaults: UserDefaults
+    private let store: PlexCredentialStore
+
+    init(defaults: UserDefaults, store: PlexCredentialStore) {
+        self.defaults = defaults
+        self.store = store
     }
 
     func loadConfig() -> PlexConfig? {
-        #if DEBUG
-        // TEMPORARY: Load from UserDefaults for testing
-        if let serverUrl = UserDefaults.standard.string(forKey: serverUrlKey),
-           let token = UserDefaults.standard.string(forKey: "plex-token-debug") {
-            return PlexConfig(plexServerUrl: serverUrl, plexToken: token)
-        }
-        return nil
-        #else
-        // Load from Keychain
-        if let token = loadTokenFromKeychain(),
-           let serverUrl = loadServerUrlFromUserDefaults() {
-            return PlexConfig(plexServerUrl: serverUrl, plexToken: token)
-        }
-        return nil
-        #endif
+        loadSavedConnection().config
     }
 
-    func saveConfig(serverUrl: String, token: String) -> Bool {
-        // TEMPORARY: Save both to UserDefaults for testing
-        #if DEBUG
-        UserDefaults.standard.set(serverUrl, forKey: serverUrlKey)
-        UserDefaults.standard.set(token, forKey: "plex-token-debug")
-        print("DEBUG: Saved to UserDefaults only (skipping Keychain)")
-        return true
-        #else
-        // Save token to Keychain first (secure) - this is the critical operation
-        guard saveTokenToKeychain(token) else {
+    func loadSavedConnection() -> SavedPlexConnection {
+        do {
+            if let connection = try store.read(account: connectionAccount) {
+                let config = try JSONDecoder().decode(PlexConfig.self, from: connection)
+                saveServerHint(config.plexServerUrl)
+                return .available(config)
+            }
+
+            return try migrateLegacyConfig()
+        } catch {
+            return .unavailable
+        }
+    }
+
+    func saveConfig(serverUrl: String, token: String, allowsLocalHTTP: Bool = false) -> Bool {
+        let config = PlexConfig(plexServerUrl: serverUrl, plexToken: token, allowsLocalHTTP: allowsLocalHTTP)
+        do {
+            let connection = try JSONEncoder().encode(config)
+            try store.save(connection, account: connectionAccount)
+        } catch {
             return false
         }
 
-        // Only save server URL to UserDefaults if Keychain save succeeded
-        UserDefaults.standard.set(serverUrl, forKey: serverUrlKey)
+        // Keep the older app's Keychain entry and its associated address intact.
+        saveServerHint(serverUrl)
         return true
-        #endif
-    }
-
-    func clearConfig() {
-        // Clear UserDefaults
-        UserDefaults.standard.removeObject(forKey: serverUrlKey)
-        #if DEBUG
-        UserDefaults.standard.removeObject(forKey: "plex-token-debug")
-        #endif
-
-        // Clear Keychain
-        deleteTokenFromKeychain()
     }
 
     func getServerUrl() -> String? {
-        return loadServerUrlFromUserDefaults()
+        defaults.string(forKey: serverURLKey) ?? defaults.string(forKey: legacyServerURLKey)
     }
 
-    // MARK: - Keychain Operations
-
-    private func saveTokenToKeychain(_ token: String) -> Bool {
-        guard let tokenData = token.data(using: .utf8) else {
-            print("DEBUG: Failed to convert token to data")
-            return false
+    private func saveServerHint(_ serverURL: String) {
+        if defaults.string(forKey: serverURLKey) != serverURL {
+            defaults.set(serverURL, forKey: serverURLKey)
         }
-
-        // Delete any existing token first
-        deleteTokenFromKeychain()
-
-        // For sandboxed apps, we need simpler keychain access without password prompts
-        // Using kSecAttrAccessibleAfterFirstUnlock allows the app to access the keychain
-        // after the user logs in, without requiring additional authentication
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: tokenAccount,
-            kSecValueData as String: tokenData,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
-        ]
-
-        let status = SecItemAdd(query as CFDictionary, nil)
-        print("DEBUG: Keychain save status: \(status) (errSecSuccess = \(errSecSuccess))")
-        if status != errSecSuccess {
-            print("DEBUG: Keychain error: \(SecCopyErrorMessageString(status, nil) as String? ?? "Unknown error")")
+        if defaults.object(forKey: debugTokenKey) != nil {
+            defaults.removeObject(forKey: debugTokenKey)
         }
-        return status == errSecSuccess
     }
 
-    private func loadTokenFromKeychain() -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: tokenAccount,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+    private func migrateLegacyConfig() throws -> SavedPlexConnection {
+        let legacyToken = try store.read(account: legacyTokenAccount).flatMap { String(data: $0, encoding: .utf8) }
+        let debugToken = defaults.string(forKey: debugTokenKey)
+        guard let token = legacyToken ?? debugToken else {
+            return getServerUrl() == nil ? .missing : .needsReview
+        }
+        guard let serverURL = defaults.string(forKey: legacyServerURLKey) else { return .needsReview }
+        // Debug and Release once shared an address field but wrote their tokens to different stores.
+        // Different surviving tokens require the user to validate the address and token together.
+        if let legacyToken, let debugToken, legacyToken != debugToken {
+            return .needsReview
+        }
+
+        let allowsLocalHTTP = PlexServerAddress.isLegacyLocalHTTP(serverURL)
+        let config = PlexConfig(plexServerUrl: serverURL, plexToken: token, allowsLocalHTTP: allowsLocalHTTP)
+        if saveConfig(serverUrl: serverURL, token: token, allowsLocalHTTP: allowsLocalHTTP) {
+            return .available(config)
+        }
+
+        // A legacy Release login can remain usable if migration fails temporarily.
+        // A legacy Debug token must move to Keychain before it can be used.
+        return legacyToken == nil ? .unavailable : .available(config)
+    }
+}
+
+private struct KeychainPlexCredentialStore: PlexCredentialStore {
+    private let service = "com.nowplayingforplex.credentials"
+
+    func read(account: String) throws -> Data? {
+        var query = key(account)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecItemNotFound { return nil }
+        guard status == errSecSuccess else { throw KeychainError(status: status) }
+        guard let data = result as? Data else { throw KeychainError(status: errSecDecode) }
+        return data
+    }
 
-        guard status == errSecSuccess,
-              let tokenData = result as? Data,
-              let token = String(data: tokenData, encoding: .utf8) else {
-            return nil
+    func save(_ data: Data, account: String) throws {
+        let query = key(account)
+        let changes = [kSecValueData as String: data]
+        var status = SecItemUpdate(query as CFDictionary, changes as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item[kSecValueData as String] = data
+            item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+            status = SecItemAdd(item as CFDictionary, nil)
+            if status == errSecDuplicateItem {
+                status = SecItemUpdate(query as CFDictionary, changes as CFDictionary)
+            }
         }
-
-        return token
+        guard status == errSecSuccess else { throw KeychainError(status: status) }
     }
 
-    private func deleteTokenFromKeychain() {
-        let query: [String: Any] = [
+    private func key(_ account: String) -> [String: Any] {
+        [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: tokenAccount
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
         ]
-
-        SecItemDelete(query as CFDictionary)
     }
+}
 
-    // MARK: - UserDefaults Operations
-
-    private func loadServerUrlFromUserDefaults() -> String? {
-        return UserDefaults.standard.string(forKey: serverUrlKey)
-    }
+private struct KeychainError: Error {
+    let status: OSStatus
 }

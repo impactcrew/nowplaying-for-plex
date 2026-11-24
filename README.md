@@ -3,35 +3,33 @@
 
   # NowPlaying for Plex
 
-  ![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+  ![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)
   ![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)
-  ![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)
+  ![Swift](https://img.shields.io/badge/Swift-6.2%2B-orange.svg)
   ![License](https://img.shields.io/badge/license-MIT-green.svg)
 </div>
 
-A beautiful, lightweight macOS menu bar widget that displays your currently playing Plex media with album artwork and track information in real-time. Features a customizable floating overlay and smooth transitions.
+A Swift macOS menu bar app that shows the music playing on your Plex server, with album art and track details in a floating widget. The widget displays playback information. Use your Plex player to control playback. The macOS app is the maintained version of this project.
 
-**Note:** This is a display-only widget.
-
-![NowPlaying for Plex](Screenshot.png)
+![NowPlaying for Plex widget showing album art and track details](Screenshot.png)
 
 ### Onboarding
-<img src="Onboarding 2.webp" alt="Onboarding screen">
+<img src="Onboarding 2.webp" alt="First-run setup with the Amber app icon" width="568">
 
 ### Customization Options
 <img src="Player.webp" alt="Widget player modes">
 
 ### Settings Panel
-<img src="Settings.webp" alt="Settings panel">
+<img src="Settings.webp" alt="Settings panel beneath the five-bar menu bar icon" width="328">
 
 ## Features
 
-- **NEW: Mini mode** - Mini widget for those who want something compact
-- **Menu Bar Integration** - Menu bar icon with Plex chevron for quick access to settings
+- **Mini mode** - A compact option for smaller screens
+- **Menu Bar Integration** - Five-bar icon for quick access to settings
 - **Beautiful Album Art** - Displays high-quality album artwork with customizable shapes (square, rounded, circle)
 - **Smooth Track Transitions** - Album art persists during track changes for seamless playback experience
-- **Real-time Updates** - Automatically polls and updates as your playback changes (2-second interval)
-- **Secure Authentication** - Token stored securely in macOS Keychain
+- **Playback source** - Follow a Plex user or player, or let the widget select an active music session
+- **Secure authentication** - Connection settings and token are stored in macOS Keychain
 - **First-run Onboarding** - Easy setup with guided onboarding and connection validation
 - **Customizable Appearance** - Theme (Light/Dark), Layout (Side/Overlay), Glow colors
 - **Universal Binary** - Optimized for both Intel and Apple Silicon Macs
@@ -39,34 +37,13 @@ A beautiful, lightweight macOS menu bar widget that displays your currently play
 
 ## Installation
 
-### Download DMG Installer (Recommended)
+### Download the disk image
 
-Download the DMG installer from the [Releases](https://github.com/impactcrew/plex-desktop-widget/releases) page.
+1. Choose a release identified as signed and notarized on the [Releases page](https://github.com/impactcrew/nowplaying-for-plex/releases).
+2. Open `NowPlaying-for-Plex.dmg` and drag **NowPlaying for Plex** into **Applications**.
+3. Open the app and connect it to your Plex server.
 
-1. Download the latest `NowPlaying-for-Plex.dmg` from the Releases page
-2. Open the DMG file
-3. Drag `NowPlaying for Plex.app` to the `Applications` folder
-4. Open `NowPlaying for Plex.app` (you'll see a security warning - this is normal)
-5. Go to **System Settings** > **Privacy & Security** and click **"Open Anyway"**
-6. Run this Terminal command to enable network access: ¹
-   ```bash
-   sudo xattr -rd com.apple.quarantine "/Applications/NowPlaying for Plex.app"
-   ```
-7. Launch NowPlaying for Plex and complete the onboarding setup
-8. Grant Keychain access when prompted
-
-**Universal Binary:** Works natively on both Intel (x86_64) and Apple Silicon (arm64) Macs.
-
-¹ Coming Soon: NowPlaying for Plex will be published to the Mac App Store for easier installation and automatic updates.
-
-### Build from Source (Advanced)
-
-If you want to build from source:
-
-1. Clone this repository
-2. Navigate to `NowPlayingForPlex/` directory
-3. Run `./build.sh` to create universal binary
-4. Copy `build/NowPlaying for Plex.app` to your Applications folder
+Older downloads may predate Developer ID signing. If no signed download is listed, build from source.
 
 ## Requirements
 
@@ -79,9 +56,9 @@ If you want to build from source:
 
 On first launch, the widget will guide you through a simple onboarding process:
 
-1. **Server URL** - Enter your Plex server URL (e.g., `http://localhost:32400`)
+1. **Server URL** - Enter your Plex server address. HTTPS is the default. For a trusted local server that only serves HTTP, enter the full `http://` URL and enable **Allow HTTP on my local network**. Remote connections require HTTPS.
 2. **Authentication Token** - Provide your Plex authentication token
-3. **Permissions** - Grant accessibility and app monitoring permissions
+3. **Local network** - Allow access if macOS asks. To change that choice later, open **System Settings > Privacy & Security > Local Network**. [Apple's Local Network guide](https://support.apple.com/en-gb/guide/mac-help/mchla4f49138/mac)
 
 To get your Plex token, see [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
 
@@ -93,6 +70,7 @@ Access settings from the menu bar icon to customize:
 - Layout (Side/Overlay)
 - Album art shape (Square/Circular)
 - Glow (on/off, color: blue, purple, pink, orange, green, cyan)
+- Playback Source (Automatic, a Plex user, or a player)
 
 ## Architecture
 
@@ -108,9 +86,8 @@ Built with modern Swift and SwiftUI:
 
 ### Prerequisites
 
-- Xcode 15.0 or later
-- macOS 13.0 (Ventura) or later
-- Command Line Tools installed
+- Xcode 26.6 or later with Swift 6.2 or later
+- A Mac running a version of macOS supported by that Xcode release
 
 ### Build Instructions
 
@@ -121,11 +98,9 @@ cd nowplaying-for-plex/NowPlayingForPlex
 
 # Run the build script (creates universal binary)
 ./build.sh
-
-# The app will be at: build/NowPlaying for Plex.app
-# Copy to Applications folder
-cp -r "build/NowPlaying for Plex.app" /Applications/
 ```
+
+The local app is at `NowPlayingForPlex/build/NowPlaying for Plex.app`. See the [contributor guide](CONTRIBUTING.md#testing) for tests and the [release process](CONTRIBUTING.md#direct-download-releases) for distribution builds.
 
 ## Development
 
@@ -162,16 +137,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Widget Not Showing
 
-- Ensure Plex is actively playing media
+- Ensure Plex is playing music and check the Playback Source setting
 - Check that your Plex server is accessible
 - Verify server URL and token are correct in settings
 - Check Console.app for error logs (filter by "NowPlaying")
 
 ### Gatekeeper Warning
 
-- Right-click "NowPlaying for Plex.app" and select "Open" (first launch only)
-- Click "Open" in the security dialog
-- App is not code-signed (requires $99/year Apple Developer Program)
+If macOS refuses to open a download, check that the release is marked signed and notarized. Report a refusal for a signed release through GitHub Issues.
 
 ### App Crashes During Onboarding
 
@@ -190,7 +163,9 @@ This app:
 
 ## Recent Updates
 
-- **v1.3.0** - Major CPU optimization: reduced CPU usage during playback from 6% to under 0.5%
+- **v1.3.1** - Restores dragging for the widget and setup window, adds playback source selection, and protects your saved connection when a server change fails. If you’re upgrading directly from v1.0.0, enter your Plex server address and token again during setup.
+
+- **v1.3.0** - Reduced polling and animation work during playback
   - Replaced infinite scroll animations with discrete animation cycles
   - Implemented adaptive API polling (5s playing, 10s paused)
   - Timer stops completely when playback paused
@@ -204,27 +179,9 @@ This app:
 - **Menu bar quit button** - Added quit option in settings panel
 - **Hidden from sound menu** - No longer appears in macOS sound menu
 
-## Known Issues
-
-None! All critical bugs have been fixed in v1.0.0.
-
 ## Known Limitations
 
-### Playback Control Not Supported
-
-NowPlaying for Plex cannot add play/pause/skip buttons due to fundamental limitations in Plex's architecture:
-
-- **Plex Companion Protocol** - Exclusive to official Plex applications only
-- **No Third-Party Discovery** - Third-party apps cannot be discovered or targeted for playback control
-- **Controller-Only Desktop App** - The macOS Plex app functions only as a controller, not a receiver
-- **No Public API** - No public API exists for remote playback control
-
-*This is not a bug or missing feature - it's an architectural restriction enforced by Plex. We investigated multiple approaches and found no viable solution for third-party playback control.*
-
-## Upcoming Development
-
-- App store version
-- Windows version
+The widget displays Plex music sessions. Playback remains in the Plex player.
 
 ## License
 
