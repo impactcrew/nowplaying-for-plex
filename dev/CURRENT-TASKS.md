@@ -11,7 +11,8 @@ Last updated 2026-11-24.
 ## Where things stand
 
 - All 12 review fixes and the build 4 feedback are implemented. Local branch `fix/widget-window-border` contains the app changes at `91db731` and the installer changes at `9c9b471`. No push or release took place.
-- The current release candidate is **1.3.1 build 6**. Xcode 27.2 built the [unsigned app](../NowPlayingForPlex/build/1.3.1-6/PlexWidget.app), and the bundle check confirmed the expected version, privacy manifest, and both Apple Silicon and Intel executables. All 23 standalone app tests and the packaging tests passed. Xcode's app-hosted test run stopped at signing before running any tests.
+- The current release candidate is **1.3.1 build 6** and includes the Reset Position move from `94c162c`. Xcode 27.2 built the [unsigned app](../NowPlayingForPlex/build/1.3.1-6/PlexWidget.app) and [unsigned archive](../NowPlayingForPlex/build/1.3.1-6/NowPlaying-for-Plex.xcarchive). The archived app passed the version, privacy manifest, and Intel and Apple Silicon checks. All 23 standalone app tests and the packaging tests passed.
+- Xcode compiled the app-hosted test bundle with signing disabled. The local run stopped before executing tests because the session could not connect to the macOS test runner service. The GitHub Actions run remains pending.
 - [NowPlaying for Plex 1.3.0 build 5](active/hostile-repo-review/testing/NowPlaying-for-Plex-1.3.0-5-test.dmg) remains available as the ad hoc test installer. Security framework checks confirmed its signatures, sandbox and outgoing network entitlements. The disk-image checksum and offline readback confirmed the app, original background, Finder layout and volume icon. The session could not mount the image, so installation and live checks are still open.
 
 ## Decisions to keep
