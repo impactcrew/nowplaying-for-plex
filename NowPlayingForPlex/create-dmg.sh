@@ -93,7 +93,7 @@ ready_image="$stage/output/$(basename "$output")"
 
 mkdir "$image_contents" "$mount_dir" "$stage/output"
 mkdir "$image_contents/.background"
-ditto --noextattr --norsrc "$source_app" "$image_contents/$app_name"
+cp -pRPX "$source_app" "$image_contents/$app_name"
 ln -s /Applications "$image_contents/Applications"
 cp "$project_dir/dmg-layout/background.png" "$image_contents/.background/background.png"
 
