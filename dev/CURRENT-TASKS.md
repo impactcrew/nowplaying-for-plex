@@ -1,11 +1,11 @@
 # Current tasks
 
-Last updated 2026-11-23.
+Last updated 2026-11-24.
 
 ## Next
 
 - [ ] Test build 5 on the Mac. Confirm the existing Plex login survives, the widget and setup window drag, and Finder shows the approved DMG layout. Include Tab and Escape in the settings panel and confirm the orange On and grey Off launch-at-login switch.
-- [ ] Before a public release, confirm the hosted macOS checks and verify the signed, notarized release DMG on a clean Mac.
+- [ ] Before a public release, choose an unused version, confirm the hosted macOS checks, and verify the signed, notarized release DMG on a clean Mac. Test Plex sign-in after upgrading from public v1.3.0 and decide how to handle sign-in for v1.0.0 users.
 - [ ] Check whether the removed integration still appears in the repository contributors list. This is a separate, older task.
 
 ## Where things stand
@@ -22,3 +22,5 @@ Last updated 2026-11-23.
 - The existing `AnyShape` Sendable warning remains. Earlier design checks are in `dev/active/glass-settings-menu/`, and the original app backup is in `dev/completed/widget-window-border/installed-app-backup.zip`.
 
 See [review and repair records](active/hostile-repo-review/PLAN.md) for the full history.
+
+The [release readiness check](active/hostile-repo-review/release-readiness.html) records the public version overlap, upgrade findings, and remaining release checks.
