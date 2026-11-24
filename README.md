@@ -11,7 +11,7 @@
 
 A Swift macOS menu bar app that shows the music playing on your Plex server, with album art and track details in a floating widget. The widget displays playback information. Use your Plex player to control playback. The macOS app is the maintained version of this project.
 
-![NowPlaying for Plex](Screenshot.png)
+![NowPlaying for Plex widget showing album art and track details](Screenshot.png)
 
 ### Onboarding
 <img src="Onboarding 2.webp" alt="Onboarding screen">
